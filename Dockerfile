@@ -1,5 +1,7 @@
-FROM debian:jessie
-MAINTAINER Denny de la Haye <2019@denny.me>
+# base Docker on main Perl Docker image
+# https://github.com/Perl/docker-perl/tree/master/5.040.001-main-bookworm
+FROM perl:5.40.1-bookworm
+MAINTAINER William N. Braswell, Jr. <william.braswell@autoparallel.com>
 
 
 # Set some general config stuff
@@ -33,6 +35,9 @@ RUN apt update \
 # Install required CPAN modules
 
 RUN cpanm --quiet --notest --no-man-pages Module::Install::Catalyst Module::Build DBD::mysql \
+#\
+#    && cpanm Net::Akismet module --sudo --force  # NEED DELETE, OLD POSSIBLY-INCORRECT COMMANDS
+#    && cpanm Net::Akismet --force  # NEED CHECK IF ACTUALLY REQUIRED???
 \
 	&& cpanm --quiet --notest --no-man-pages --installdeps . \
 \
