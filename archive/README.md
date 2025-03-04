@@ -35,15 +35,17 @@ Installation
 
 You can install ShinyCMS by pasting one of the commands below into a terminal:
 
-[[[ NEED ADD DOCKER COMMANDS FOR AUTOMATIC INSTALL ]]]
+For a site with demo data:
+`curl https://raw.githubusercontent.com/denny/ShinyCMS/main/bin/install.sh | SHINYCMS_DEMO=1 sh`
 
-[[[ NEED ADD CPAN COMMANDS FOR MANUAL INSTALL ]]]
+For a new (empty) site:
+`curl https://raw.githubusercontent.com/denny/ShinyCMS/main/bin/install.sh | sh`
 
 
 Author
 ------
 
-ShinyCMS is copyright (c) 2009-2019 Denny de la Haye, 2025 Perl Community.
+ShinyCMS is copyright (c) 2009-2019 Denny de la Haye.
 
 
 Licensing

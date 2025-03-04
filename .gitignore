@@ -10,3 +10,6 @@
 # Test artefacts
 /cover_db
 /t/.perlcritic-history
+
+# GitLab CI Testing
+GitLab-CI-Testing-*
