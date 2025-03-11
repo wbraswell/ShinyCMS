@@ -3,15 +3,7 @@
 FROM perl:5.40.1-bookworm
 MAINTAINER William N. Braswell, Jr. <william.braswell@autoparallel.com>
 
-
-# set some general config stuff
-
-ENV APP_NAME=ShinyCMS  \
-	APP_PORT=6174       \
-	APP_USER=shinycms    \
-	APP_DIR=/opt/shinycms \
-	SHINYCMS_CONFIG=/opt/shinycms/config/shinycms.conf
-
+# WBRASWELL 20250311: moved all environmental variables from Dockerfile to docker-compose.yml
 
 # install required Debian packages
 
