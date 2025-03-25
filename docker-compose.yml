@@ -7,6 +7,13 @@ services:
     build: 
       context: .
       dockerfile: docker/Dockerfile
+      args:
+      # KAI 20250325: Moving build environment variables to docker compose
+        APP_DIR: /opt/shinycms
+        APP_USER: shinycms
+        APP_PORT: 6174
+        APP_NAME: ShinyCMS
+        SHINYCMS_CONFIG: /opt/shinycms/config/shinycms.conf
     image: app_shinycms:latest
     ports:
       - "6174:6174"  # ShinyCMS default port; Catalyst default is 5000
