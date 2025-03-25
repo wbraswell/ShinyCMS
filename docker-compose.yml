@@ -8,7 +8,9 @@ services:
       context: .
       dockerfile: docker/Dockerfile
       args:
-      # KAI 20250325: Moving build environment variables to docker compose
+      # KBAKER 20250325: ShinyCMS's environment variables are defined in this docker-compose.yml below,
+      # and are imported to the Dockerfile for use during the docker build process
+      # as automatically initiated by the command `docker compose up`
         APP_DIR: /opt/shinycms
         APP_USER: shinycms
         APP_PORT: 6174
