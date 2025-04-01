@@ -72,6 +72,7 @@ RUN cpanm --quiet --notest --no-man-pages Catalyst::Plugin::Session::Store::DBIC
 RUN cpanm --quiet --notest --no-man-pages DBD::MariaDB
 # KBAKER 20250325: Installing Catalyst's Schema used to switch different databases
 RUN cpanm --quiet --notest --no-man-pages Catalyst::Model::DBIC::Schema
+RUN cpanm --quiet --notest --no-man-pages Catalyst::Helper
 
 
 # copy the webapp files into place and make sure our webapp user owns them
@@ -88,11 +89,6 @@ RUN chown -R $APP_USER:$APP_USER $APP_DIR
 RUN mkdir -p /var/run/mysqld && \
     chown -R mysql:mysql /var/run/mysqld && \
     chmod 777 /var/run/mysqld
-
-# KBAKER 20250325: Will attempt to run the shinycms create script with the parameters to change databases
-# COPY ./script/shinycms_create.pl .
-# RUN chmod +x shinycms_create.pl && \
-# 	shinycms_create.pl model MariaDB DBIC::Schema PerlJobs::Schema create=static
 
 # WBRASWELL 20250304: all database creation & initialization commands below were copied from the old now-deprecated install.sh
 # create database and database user
@@ -112,7 +108,20 @@ RUN service mariadb start && \
     mariadb -uroot -e "create user if not exists 'shinyuser'@'localhost' identified by 'shinypass'" && \
     mariadb -uroot -e "grant all privileges on shinycms.* to 'shinyuser'@'localhost'" && \
     cd $APP_DIR && \
-    ./bin/database/build-with-demo-data
+    ./bin/database/build-with-demo-data && \
+	# KBAKER 20250328: Configuring Catalyst to use MariaDB instead of mysql
+	chmod +x script/shinycms_create.pl && \
+	script/shinycms_create.pl model MariaDB DBIC::Schema ShinyCMS::Schema create=static \
+    "dbi:MariaDB:database=shinycms;host=localhost" "shinyuser" "shinypass"
+
+# KBAKER 20250325: Will attempt to run the shinycms create script with the parameters to change databases
+# COPY ./script/shinycms_create.pl .
+# RUN chmod +x shinycms_create.pl && \
+# 	shinycms_create.pl model MariaDB DBIC::Schema PerlJobs::Schema create=static
+# WORKDIR $APP_DIR
+# RUN chmod +x script/shinycms_create.pl
+# RUN script/shinycms_create.pl model MariaDB DBIC::Schema PerlJobs::Schema create=static \
+#     dbi:MariaDB:database=shinycms;host=localhost shinyuser shinypass
 
 	# insert initialization data into database
 # WBRASWELL 20250304: NEED FIX, how to handle following logic copied from old now-deprecated install.sh???
@@ -143,7 +152,7 @@ sleep 2\n\
 echo "Starting ShinyCMS on port $APP_PORT"\n\
 #/usr/local/bin/perl
 which perl\n\
-perl -V\n\
+#perl -V\n\
 cd $APP_DIR\n\
 exec script/shinycms_server.pl --port $APP_PORT\n\
 ' > /start.sh && \
@@ -153,7 +162,7 @@ exec script/shinycms_server.pl --port $APP_PORT\n\
 
 EXPOSE $APP_PORT
 
-WORKDIR $APP_DIR
+# WORKDIR $APP_DIR
 
 # KBAKER: 20250324: Run the custom startup script when container starts
 # This script will start both MariaDB and ShinyCMS
