@@ -49,12 +49,21 @@ sub get_config {
     return $config if $config;
 
     my $config_file = $shinyroot.'/config/shinycms.conf';
-    my $reader = Config::General->new( $config_file );
+    my $reader = Config::General->new(
+        -InterPolateVars => 1,
+        -InterPolateEnv  => 1,
+        -ConfigFile => $config_file,
+    );  
+
     my %config = $reader->getall;
 
     if ( $ENV{ SHINYCMS_TEST } ) {
         my $test_config_file = $shinyroot.'/config/shinycms_test.conf';
-        my $test_reader = Config::General->new( $test_config_file );
+        my $test_reader = Config::General->new(
+			-InterPolateVars => 1,
+			-InterPolateEnv => 1,
+            -ConfigFile => $test_config_file,
+        );
         my %test_config = $test_reader->getall;
         @config{ keys %test_config } = values %test_config;
     }

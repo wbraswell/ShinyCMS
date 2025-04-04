@@ -234,7 +234,7 @@ Related object: L<ShinyCMS::Schema::Result::Basket>
 __PACKAGE__->has_many(
   "baskets",
   "ShinyCMS::Schema::Result::Basket",
-  { "foreign.user" => "self.id" },
+  { "foreign.user_id" => "self.id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
@@ -279,7 +279,7 @@ Related object: L<ShinyCMS::Schema::Result::CommentLike>
 __PACKAGE__->has_many(
   "comments_like",
   "ShinyCMS::Schema::Result::CommentLike",
-  { "foreign.user" => "self.id" },
+  { "foreign.user_id" => "self.id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
@@ -294,7 +294,7 @@ Related object: L<ShinyCMS::Schema::Result::Confirmation>
 __PACKAGE__->has_many(
   "confirmations",
   "ShinyCMS::Schema::Result::Confirmation",
-  { "foreign.user" => "self.id" },
+  { "foreign.user_id" => "self.id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
@@ -329,7 +329,7 @@ Related object: L<ShinyCMS::Schema::Result::FileAccess>
 __PACKAGE__->has_many(
   "file_accesses",
   "ShinyCMS::Schema::Result::FileAccess",
-  { "foreign.user" => "self.id" },
+  { "foreign.user_id" => "self.id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
@@ -374,7 +374,7 @@ Related object: L<ShinyCMS::Schema::Result::Order>
 __PACKAGE__->has_many(
   "orders",
   "ShinyCMS::Schema::Result::Order",
-  { "foreign.user" => "self.id" },
+  { "foreign.user_id" => "self.id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
@@ -389,7 +389,7 @@ Related object: L<ShinyCMS::Schema::Result::PollUserVote>
 __PACKAGE__->has_many(
   "poll_user_votes",
   "ShinyCMS::Schema::Result::PollUserVote",
-  { "foreign.user" => "self.id" },
+  { "foreign.user_id" => "self.id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
@@ -404,7 +404,7 @@ Related object: L<ShinyCMS::Schema::Result::ShopItemFavourite>
 __PACKAGE__->has_many(
   "shop_item_favourites",
   "ShinyCMS::Schema::Result::ShopItemFavourite",
-  { "foreign.user" => "self.id" },
+  { "foreign.user_id" => "self.id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
@@ -419,7 +419,7 @@ Related object: L<ShinyCMS::Schema::Result::ShopItemView>
 __PACKAGE__->has_many(
   "shop_item_views",
   "ShinyCMS::Schema::Result::ShopItemView",
-  { "foreign.user" => "self.id" },
+  { "foreign.user_id" => "self.id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
@@ -434,7 +434,7 @@ Related object: L<ShinyCMS::Schema::Result::ShopItemLike>
 __PACKAGE__->has_many(
   "shop_items_like",
   "ShinyCMS::Schema::Result::ShopItemLike",
-  { "foreign.user" => "self.id" },
+  { "foreign.user_id" => "self.id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
@@ -449,7 +449,7 @@ Related object: L<ShinyCMS::Schema::Result::TransactionLog>
 __PACKAGE__->has_many(
   "transaction_logs",
   "ShinyCMS::Schema::Result::TransactionLog",
-  { "foreign.user" => "self.id" },
+  { "foreign.user_id" => "self.id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
@@ -464,7 +464,7 @@ Related object: L<ShinyCMS::Schema::Result::UserAccess>
 __PACKAGE__->has_many(
   "user_accesses",
   "ShinyCMS::Schema::Result::UserAccess",
-  { "foreign.user" => "self.id" },
+  { "foreign.user_id" => "self.id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
@@ -479,7 +479,7 @@ Related object: L<ShinyCMS::Schema::Result::UserLogin>
 __PACKAGE__->has_many(
   "user_logins",
   "ShinyCMS::Schema::Result::UserLogin",
-  { "foreign.user" => "self.id" },
+  { "foreign.user_id" => "self.id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
@@ -494,7 +494,7 @@ Related object: L<ShinyCMS::Schema::Result::UserRole>
 __PACKAGE__->has_many(
   "user_roles",
   "ShinyCMS::Schema::Result::UserRole",
-  { "foreign.user" => "self.id" },
+  { "foreign.user_id" => "self.id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 

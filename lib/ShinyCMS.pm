@@ -38,7 +38,6 @@ use Catalyst qw/
 use CatalystX::RoleApplicator;
 use Method::Signatures::Simple;
 
-
 our $VERSION = '19.9';
 $VERSION = eval { $VERSION };
 
@@ -48,10 +47,11 @@ __PACKAGE__->config(
 	name => 'ShinyCMS',
 	# Load config file
 	'Plugin::ConfigLoader' => {
-		file   => 'config/shinycms.conf',
+		file   => __PACKAGE__->path_to('config/shinycms.conf'),
 		driver => {
 			'General' => {
 				-InterPolateVars => 1,
+				-InterPolateEnv => 1,
 				-UTF8 => 1,
 			},
 		},

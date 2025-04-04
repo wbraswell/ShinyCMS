@@ -23,4 +23,4 @@ require 'helpers.pl';  ## no critic
 my $schema = get_schema();
 
 # Deploy the schema
-$schema->deploy({ add_drop_table => 1 });
+$schema->deploy({ add_drop_table => 1, quote_identifier=>1 });
