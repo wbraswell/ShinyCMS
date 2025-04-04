@@ -33,10 +33,7 @@ requires 'Text::CSV::Simple';
 requires 'URI::Encode';
 requires 'XML::Feed';
 requires 'Sub::Identify';
-
-# for now
 requires "DBI";
-requires "DBD::Pg";
 
 
 on 'test' => sub {
@@ -50,6 +47,11 @@ on 'test' => sub {
     requires 'Test::Pod';
     requires 'Test::Pod::Coverage';
     requires 'Test::WWW::Mechanize::Catalyst::WithContext';
+};
+
+feature 'postgres', 'PostgreSQL Support' => sub {
+    requires 'DBD::Pg';
+    requires 'DateTime::Format::Pg';
 };
 
 feature 'xml_support', 'XML Support' => sub {

@@ -25,7 +25,7 @@ RUN cpanm --notest --reinstall App::cpanminus # Get lastest version
 
 COPY cpanfile* .
 RUN cpanm --version
-RUN cpanm --installdeps --notest --with-feature=xml_support --with-feature=docker .
+RUN cpanm --installdeps --notest --with-feature=xml_support --with-feature=docker --with-feature=postgres .
 
 # We ran the cpanm command above to install the dependencies
 # first so that now its cached.  This way if we modify the

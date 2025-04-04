@@ -47,10 +47,10 @@ help:
 
 update-cpanlib: ## Install CPAN libs
 	@echo "Installing CPAN libs..."
-	pwd
-	ls -la 
-	ls -la ..
-	cpanm --mirror http://cpan.cpantesters.org/ --mirror-only --notest --installdeps .
+	cpanm --mirror http://cpan.cpantesters.org/ --mirror-only --notest  \
+		--with-feature=postgres \
+		--with-feature=xml_support \
+		--with-feature=docker
 	@echo "Done!"
 
 update-all: update-cpanlib  ## Install CPAN libs 
