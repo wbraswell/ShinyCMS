@@ -38,7 +38,7 @@ __PACKAGE__->load_components("InflateColumn::DateTime", "TimeStamp", "EncodedCol
 
 =cut
 
-__PACKAGE__->table("user");
+__PACKAGE__->table("users");
 
 =head1 ACCESSORS
 
