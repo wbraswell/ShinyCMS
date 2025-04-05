@@ -148,6 +148,8 @@ stack-restart: update-all server-restart ## Restart the stack
 
 start: up ## Alias for 'up'
 
+down: stop ## Alias for 'stop'
+
 up: prune ## Start the docker containers
 	DOCKER_BUILDKIT=1 $(DOCKER) up -d --build --force-recreate 
 	@echo "Started application. Visit http://localhost:$(WEB_SERVER_PORT)/"
