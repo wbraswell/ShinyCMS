@@ -38,7 +38,7 @@ __PACKAGE__->load_components("InflateColumn::DateTime", "TimeStamp", "EncodedCol
 
 =cut
 
-__PACKAGE__->table("order");
+__PACKAGE__->table("orders");
 
 =head1 ACCESSORS
 
@@ -164,7 +164,7 @@ __PACKAGE__->add_columns(
   { data_type => "integer", is_auto_increment => 1, is_nullable => 0 },
   "session",
   { data_type => "char", is_foreign_key => 1, is_nullable => 1, size => 72 },
-  "user",
+  "user_id",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 1 },
   "email",
   { data_type => "varchar", is_nullable => 0, size => 250 },
@@ -276,9 +276,9 @@ Related object: L<ShinyCMS::Schema::Result::User>
 =cut
 
 __PACKAGE__->belongs_to(
-  "user",
+  "user_id",
   "ShinyCMS::Schema::Result::User",
-  { id => "user" },
+  { id => "user_id" },
   {
     is_deferrable => 1,
     join_type     => "LEFT",

@@ -1,0 +1,65 @@
+name: shinycms
+services:
+  app_shinycms:  # Add web service
+    container_name: app_shinycms
+    networks:
+      - shinycms_network
+    build: 
+      context: ..
+      dockerfile: docker/Dockerfile
+      args:
+        APP_USER: shinycms
+        APP_PORT: ${WEB_SERVER_PORT}
+        APP_NAME: ShinyCMS
+        POSTGRES_DB: ${POSTGRES_DB}
+        POSTGRES_USER: ${POSTGRES_USER}
+        POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+        DB_PORT: ${DB_PORT}
+        DB_HOST: ${DB_HOST}
+    image: app_shinycms:latest
+    ports:
+      - ${WEB_SERVER_PORT_MAP}
+    environment:
+      - APP_NAME=ShinyCMS
+      - APP_PORT=${WEB_SERVER_PORT}
+      - APP_USER=shinycms
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - DB_PORT=${DB_PORT}
+      - DB_HOST=${DB_HOST}
+    volumes:
+      - "..:/app"
+    depends_on:
+      db_shinycms:
+        condition: service_healthy 
+  db_shinycms:  # Add PostgreSQL service
+    container_name: db_shinycms
+    networks:
+      - shinycms_network
+    build:
+      context: .
+      dockerfile: Dockerfile-psql
+    image: db_shinycms:latest
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shinycms_dbuser -d shinycms"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    volumes:
+      -  db_shinycms_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432" # For Development only
+volumes:
+  db_shinycms_data:
+    name: db_shinycms_data
+  app_shinycms_data:
+    name: app_shinycms_data
+networks:
+  shinycms_network:
+    name: shinycms_network

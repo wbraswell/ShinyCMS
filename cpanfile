@@ -1,4 +1,3 @@
-# WBRASWELL 20250304: all requirements, test requirements, and recommendations below were copied from the old now-deprecated Makefile.PL
 requires 'Catalyst::Runtime', '5.80004';
 requires 'Catalyst::Plugin::ConfigLoader';
 requires 'Catalyst::Plugin::Static::Simple';
@@ -33,6 +32,9 @@ requires 'Net::Domain::TLD';
 requires 'Text::CSV::Simple';
 requires 'URI::Encode';
 requires 'XML::Feed';
+requires 'Sub::Identify';
+requires "DBI";
+
 
 on 'test' => sub {
     requires 'Devel::Cover';
@@ -47,7 +49,27 @@ on 'test' => sub {
     requires 'Test::WWW::Mechanize::Catalyst::WithContext';
 };
 
-recommends 'FCGI';
-recommends 'FCGI::ProcManager';
-recommends 'Template::Plugin::Markdown';
+feature 'postgres', 'PostgreSQL Support' => sub {
+    requires 'DBD::Pg';
+    requires 'DateTime::Format::Pg';
+};
 
+feature 'xml_support', 'XML Support' => sub {
+    requires 'Net::Akismet';
+    requires 'XML::LibXML';
+};
+
+feature 'docker', 'Docker Support' => sub {
+    requires 'Server::Starter' => '0.35';
+    requires 'Starman' => 0;
+    requires 'Net::Server::SS::PreFork';
+};
+
+feature 'fcgi', 'FastCGI Support' => sub {
+    requires 'FCGI';
+    requires 'FCGI::ProcManager';
+};
+
+feature 'markdown', 'Markdown Support' => sub {
+    requires 'Template::Plugin::Markdown' => 0;
+};

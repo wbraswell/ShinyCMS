@@ -74,7 +74,7 @@ __PACKAGE__->add_columns(
   { data_type => "integer", is_auto_increment => 1, is_nullable => 0 },
   "item",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
-  "user",
+  "user_id",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 1 },
   "created",
   {
@@ -123,9 +123,9 @@ Related object: L<ShinyCMS::Schema::Result::User>
 =cut
 
 __PACKAGE__->belongs_to(
-  "user",
+  "user_id",
   "ShinyCMS::Schema::Result::User",
-  { id => "user" },
+  { id => "user_id" },
   {
     is_deferrable => 1,
     join_type     => "LEFT",

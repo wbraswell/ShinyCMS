@@ -1,0 +1,6 @@
+name: shinycms
+services:
+  app_shinycms:  # Add web service
+    environment:
+      - DBIC_TRACE=${DBIC_TRACE}
+      - CATALYST_DEBUG=${CATALYST_DEBUG}

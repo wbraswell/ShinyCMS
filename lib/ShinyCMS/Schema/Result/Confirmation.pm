@@ -64,7 +64,7 @@ __PACKAGE__->table("confirmation");
 =cut
 
 __PACKAGE__->add_columns(
-  "user",
+  "user_id",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
   "code",
   { data_type => "varchar", is_nullable => 0, size => 32 },
@@ -89,7 +89,7 @@ __PACKAGE__->add_columns(
 
 =cut
 
-__PACKAGE__->set_primary_key("user", "code");
+__PACKAGE__->set_primary_key("user_id", "code");
 
 =head1 RELATIONS
 
@@ -102,9 +102,9 @@ Related object: L<ShinyCMS::Schema::Result::User>
 =cut
 
 __PACKAGE__->belongs_to(
-  "user",
+  "user_id",
   "ShinyCMS::Schema::Result::User",
-  { id => "user" },
+  { id => "user_id" },
   { is_deferrable => 1, on_delete => "RESTRICT", on_update => "RESTRICT" },
 );
 

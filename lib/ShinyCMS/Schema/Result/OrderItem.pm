@@ -91,7 +91,7 @@ __PACKAGE__->table("order_item");
 __PACKAGE__->add_columns(
   "id",
   { data_type => "integer", is_auto_increment => 1, is_nullable => 0 },
-  "order",
+  "order_id",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
   "item",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
@@ -153,9 +153,9 @@ Related object: L<ShinyCMS::Schema::Result::Order>
 =cut
 
 __PACKAGE__->belongs_to(
-  "order",
+  "order_id",
   "ShinyCMS::Schema::Result::Order",
-  { id => "order" },
+  { id => "order_id" },
   { is_deferrable => 1, on_delete => "RESTRICT", on_update => "RESTRICT" },
 );
 

@@ -90,7 +90,7 @@ __PACKAGE__->table("file_access");
 __PACKAGE__->add_columns(
   "id",
   { data_type => "integer", is_auto_increment => 1, is_nullable => 0 },
-  "user",
+  "user_id",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
   "access_group",
   { data_type => "varchar", is_nullable => 0, size => 50 },
@@ -132,9 +132,9 @@ Related object: L<ShinyCMS::Schema::Result::User>
 =cut
 
 __PACKAGE__->belongs_to(
-  "user",
+  "user_id",
   "ShinyCMS::Schema::Result::User",
-  { id => "user" },
+  { id => "user_id" },
   { is_deferrable => 1, on_delete => "RESTRICT", on_update => "RESTRICT" },
 );
 

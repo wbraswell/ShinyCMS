@@ -88,7 +88,7 @@ __PACKAGE__->add_columns(
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
   "answer",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
-  "user",
+  "user_id",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
   "ip_address",
   { data_type => "varchar", is_nullable => 0, size => 15 },
@@ -154,9 +154,9 @@ Related object: L<ShinyCMS::Schema::Result::User>
 =cut
 
 __PACKAGE__->belongs_to(
-  "user",
+  "user_id",
   "ShinyCMS::Schema::Result::User",
-  { id => "user" },
+  { id => "user_id" },
   { is_deferrable => 1, on_delete => "RESTRICT", on_update => "RESTRICT" },
 );
 
