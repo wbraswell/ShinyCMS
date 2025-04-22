@@ -3,6 +3,7 @@ package ShinyCMS::Controller::Admin::Users;
 use Moose;
 use MooseX::Types::Moose qw/ Int Str /;
 use namespace::autoclean;
+use Devel::Dwarn;
 
 BEGIN { extends 'ShinyCMS::Controller'; }
 
@@ -216,7 +217,10 @@ sub save_user : Chained( 'base' ) : PathPart( 'save' ) : Args( 0 ) {
 	# Get the user ID for the user being edited
 	my $user_id = $c->request->param( 'user_id' );
 
-	unless ( $user_id ) {
+	Dwarn("DEBUG: $user_id = " . $user_id);
+
+	if ( !$user_id ) {
+		Dwarn("DEBUG: top of `if ( !$user_id )` conditional block");
 		# Adding new user - check to see if username is already in use
 		my $username_already_used = $c->model( 'DB::User' )->find({
 			username => $c->request->params->{ 'username' },
@@ -230,12 +234,15 @@ sub save_user : Chained( 'base' ) : PathPart( 'save' ) : Args( 0 ) {
 			$c->response->redirect( $c->uri_for( 'add' ) );
 			$c->detach;
 		}
+		Dwarn("DEBUG: bottom of `if ( !$user_id )` conditional block");
 	}
 
 	my $user = $c->model( 'DB::User' )->find({ id => $user_id });
+	Dwarn("DEBUG: $user = " . $user);
 
 	# Process deletions, including deleting user-generated content and metadata
 	if ( defined $c->request->param( 'delete' ) ) {
+		Dwarn("DEBUG: top of `if ( defined $c->request->param( 'delete' ) )` conditional block");
 		# TODO: Divorce some types of user-generated content from their account,
 		# but still keep them visible and attributed (change to pseudonymous)
 		#$user->blog_posts->delete;
@@ -274,6 +281,7 @@ sub save_user : Chained( 'base' ) : PathPart( 'save' ) : Args( 0 ) {
 		# Bounce to the default page
 		$c->response->redirect( $c->uri_for( '/admin/users' ) );
 		$c->detach;
+		Dwarn("DEBUG: bottom of `if ( defined $c->request->param( 'delete' ) )` conditional block");
 	}
 
 	# Get the new email from the form
@@ -329,6 +337,7 @@ sub save_user : Chained( 'base' ) : PathPart( 'save' ) : Args( 0 ) {
 
 	# Update or create user record
 	if ( $user_id ) {
+		Dwarn("DEBUG: top of `if ( $user_id )` conditional block");
 		# Remove confirmation code if manually activating user
 		if ( defined $c->request->param( 'active' ) and not $user->active ) {
 			$user->confirmations->delete;
@@ -349,8 +358,10 @@ sub save_user : Chained( 'base' ) : PathPart( 'save' ) : Args( 0 ) {
 			admin_notes   => $self->safe_param( $c, 'admin_notes'   ),
 			active        => $active,
 		});
+		Dwarn("DEBUG: bottom of `if ( $user_id )` conditional block");
 	}
 	else {
+		Dwarn("DEBUG: top of `if ( $user_id )` else conditional block");
 		# Create new user
 		$user = $c->model( 'DB::User' )->create({
 			username      => $self->safe_param( $c, 'username'      ),
@@ -368,6 +379,7 @@ sub save_user : Chained( 'base' ) : PathPart( 'save' ) : Args( 0 ) {
 			admin_notes   => $self->safe_param( $c, 'admin_notes' ),
 			active        => $self->safe_param( $c, 'active', 0   ),
 		});
+		Dwarn("DEBUG: bottom of `if ( $user_id )` else conditional block");
 	}
 
 	# Create a related discussion thread, if requested
