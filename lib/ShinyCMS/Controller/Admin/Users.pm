@@ -3,7 +3,10 @@ package ShinyCMS::Controller::Admin::Users;
 use Moose;
 use MooseX::Types::Moose qw/ Int Str /;
 use namespace::autoclean;
+
+# WBRASWELL 20250425: MySQL to PostgreSQL migration, debugging
 use Devel::Dwarn;
+use Data::Dumper;
 
 BEGIN { extends 'ShinyCMS::Controller'; }
 
@@ -217,10 +220,10 @@ sub save_user : Chained( 'base' ) : PathPart( 'save' ) : Args( 0 ) {
 	# Get the user ID for the user being edited
 	my $user_id = $c->request->param( 'user_id' );
 
-	Dwarn("DEBUG: $user_id = " . $user_id);
+	Dwarn('DEBUG: in Controller::Admin::Users::save_user(), have $user_id = ' . $user_id);
 
 	if ( !$user_id ) {
-		Dwarn("DEBUG: top of `if ( !$user_id )` conditional block");
+		Dwarn('DEBUG: in Controller::Admin::Users::save_user(), top of `if ( !$user_id )` conditional block');
 		# Adding new user - check to see if username is already in use
 		my $username_already_used = $c->model( 'DB::User' )->find({
 			username => $c->request->params->{ 'username' },
@@ -234,15 +237,26 @@ sub save_user : Chained( 'base' ) : PathPart( 'save' ) : Args( 0 ) {
 			$c->response->redirect( $c->uri_for( 'add' ) );
 			$c->detach;
 		}
-		Dwarn("DEBUG: bottom of `if ( !$user_id )` conditional block");
+		Dwarn('DEBUG: in Controller::Admin::Users::save_user(), bottom of `if ( !$user_id )` conditional block');
 	}
 
-	my $user = $c->model( 'DB::User' )->find({ id => $user_id });
-	Dwarn("DEBUG: $user = " . $user);
+    # WBRASWELL 20250425: MySQL to PostgreSQL migration, must not call find() on undefined $user_id
+    # in order to avoid the following error:
+    # DBI Exception: DBD::Pg::st execute failed: ERROR:  invalid input syntax for type integer: ""
+    # CONTEXT:  unnamed portal parameter $1 = '' [for Statement "SELECT me.id, me.username, me.password, me.email, me.firstname, me.surname, me.display_name, me.display_email, me.website, me.profile_pic, me.bio, me.location, me.postcode, me.admin_notes, me.discussion, me.active, me.forgot_password, me.created FROM users me WHERE ( me.id = ? )" with ParamValues: 1=''] at /usr/local/lib/perl5/site_perl/5.40.1/DBIx/Class/Schema.pm line 1118.
+    my $user;
+    if ($user_id) {
+        $user = $c->model( 'DB::User' )->find({ id => $user_id });
+#        Dwarn('DEBUG: in Controller::Admin::Users::save_user(), have defined $user = ' . Dumper($user));  # avoid huge debug output
+        Dwarn('DEBUG: in Controller::Admin::Users::save_user(), have defined $user');
+    }
+    else {
+        Dwarn('DEBUG: in Controller::Admin::Users::save_user(), have undefined $user');
+    }
 
 	# Process deletions, including deleting user-generated content and metadata
 	if ( defined $c->request->param( 'delete' ) ) {
-		Dwarn("DEBUG: top of `if ( defined $c->request->param( 'delete' ) )` conditional block");
+		Dwarn(q{DEBUG: in Controller::Admin::Users::save_user(), top of `if ( defined $c->request->param( 'delete' ) )` conditional block});
 		# TODO: Divorce some types of user-generated content from their account,
 		# but still keep them visible and attributed (change to pseudonymous)
 		#$user->blog_posts->delete;
@@ -281,7 +295,7 @@ sub save_user : Chained( 'base' ) : PathPart( 'save' ) : Args( 0 ) {
 		# Bounce to the default page
 		$c->response->redirect( $c->uri_for( '/admin/users' ) );
 		$c->detach;
-		Dwarn("DEBUG: bottom of `if ( defined $c->request->param( 'delete' ) )` conditional block");
+		Dwarn(q{DEBUG: in Controller::Admin::Users::save_user(), bottom of `if ( defined $c->request->param( 'delete' ) )` conditional block});
 	}
 
 	# Get the new email from the form
@@ -337,7 +351,7 @@ sub save_user : Chained( 'base' ) : PathPart( 'save' ) : Args( 0 ) {
 
 	# Update or create user record
 	if ( $user_id ) {
-		Dwarn("DEBUG: top of `if ( $user_id )` conditional block");
+		Dwarn('DEBUG: in Controller::Admin::Users::save_user(), top of `if ( $user_id )` conditional block');
 		# Remove confirmation code if manually activating user
 		if ( defined $c->request->param( 'active' ) and not $user->active ) {
 			$user->confirmations->delete;
@@ -358,10 +372,10 @@ sub save_user : Chained( 'base' ) : PathPart( 'save' ) : Args( 0 ) {
 			admin_notes   => $self->safe_param( $c, 'admin_notes'   ),
 			active        => $active,
 		});
-		Dwarn("DEBUG: bottom of `if ( $user_id )` conditional block");
+		Dwarn('DEBUG: in Controller::Admin::Users::save_user(), bottom of `if ( $user_id )` conditional block');
 	}
 	else {
-		Dwarn("DEBUG: top of `if ( $user_id )` else conditional block");
+		Dwarn('DEBUG: in Controller::Admin::Users::save_user(), top of `if ( $user_id )` else conditional block');
 		# Create new user
 		$user = $c->model( 'DB::User' )->create({
 			username      => $self->safe_param( $c, 'username'      ),
@@ -379,7 +393,7 @@ sub save_user : Chained( 'base' ) : PathPart( 'save' ) : Args( 0 ) {
 			admin_notes   => $self->safe_param( $c, 'admin_notes' ),
 			active        => $self->safe_param( $c, 'active', 0   ),
 		});
-		Dwarn("DEBUG: bottom of `if ( $user_id )` else conditional block");
+		Dwarn('DEBUG: in Controller::Admin::Users::save_user(), bottom of `if ( $user_id )` else conditional block');
 	}
 
 	# Create a related discussion thread, if requested
