@@ -163,7 +163,7 @@ build: prune ## Rebuild the docker image
 
 prune:  ## Prune the docker system
 	@echo "Pruning the docker system..."
-	@docker system prune -f --volumes
+	@docker system prune -f
 
 #### Open shells and similar in the containers
 
@@ -181,17 +181,17 @@ db-psql: ## Open a psql shell in the db container
 #### Server control
 
 app-update-all: ## Run 'make update-all' inside the app container
-	@$(DOCKER) exec app_$(LC_NAMESPACE) make update-all
+	@$(DOCKER) exec app_$(LC_NAMESPACE) make -f docker/Makefile update-all
 
 app-server-restart: ## Run 'make server-restart' inside the app container
 	@echo "Issue server restart into app_$(LC_NAMESPACE)..."
-	@$(DOCKER) exec app_$(LC_NAMESPACE) make server-restart
+	@$(DOCKER) exec app_$(LC_NAMESPACE) make -f docker/Makefile server-restart
 
 app-server-stop: ## Run 'make server-stop' inside the app container
-	@$(DOCKER) exec app_$(LC_NAMESPACE) make server-stop
+	@$(DOCKER) exec app_$(LC_NAMESPACE) make-f docker/Makefile server-stop
 
 app-server-start: ## Run 'make server-start' inside the app container
-	@$(DOCKER) exec app_$(LC_NAMESPACE) make server-start
+	@$(DOCKER) exec app_$(LC_NAMESPACE) make -f docker/Makefile server-start
 
 #### Testing
 
