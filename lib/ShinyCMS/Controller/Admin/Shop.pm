@@ -214,7 +214,7 @@ sub add_item : Chained( 'base' ) : PathPart( 'item/add' ) : Args( 0 ) {
 Process adding a new item.
 
 =cut
-
+use Devel::Dwarn;
 sub add_item_do : Chained( 'base' ) : PathPart( 'item/add-do' ) : Args( 0 ) {
 	my ( $self, $c ) = @_;
 
@@ -233,10 +233,43 @@ sub add_item_do : Chained( 'base' ) : PathPart( 'item/add-do' ) : Args( 0 ) {
 	my $stock        = $self->safe_param( $c, 'stock'        );
 	my $hidden       = $c->request->param( 'hidden'          ) ?  1 : 0;
 
+	# KBAKER 20250506: MySQL to PostgreSQL migration, added test cases for $product_type, $price
+	# and $item_code to ensure invalid data wasn't passed to Postgres
+	my $product_type = $c->request->param( 'product_type' );
+	if(! $product_type) {
+		$c->flash->{ error_msg } = 'You must create a product type first.';
+		$c->response->redirect( $c->uri_for( '/admin/shop/item/add' ) );
+		$c->detach();
+		return;
+	}
+
+	if(! $price) {
+		$c->flash->{ error_msg } = 'You must enter a price.';
+		$c->response->redirect( $c->uri_for( '/admin/shop/item/add' ) );
+		$c->detach();
+		return;
+	}
+
+	if(! $item_code) {
+		$c->flash->{ error_msg } = 'You must enter an Item Code.';
+		$c->response->redirect( $c->uri_for( '/admin/shop/item/add' ) );
+		$c->detach();
+		return;
+	}
+
+	if($item_code) {
+		if( $c->model( 'DB::ShopItem' )->find( {code => $item_code} )) {
+			$c->flash->{ error_msg } = 'Item Code must be unique.';
+			$c->response->redirect( $c->uri_for( '/admin/shop/item/add' ) );
+			$c->detach();
+			return;
+		}
+	}
+
 	my $details = {
 		name         => $c->request->param( 'name'         ),
 		code         => $item_code,
-		product_type => $c->request->param( 'product_type' ),
+		product_type => $product_type,
 		description  => $c->request->param( 'description'  ),
 		image        => $c->request->param( 'image'        ),
 		stock        => $stock,

@@ -225,13 +225,24 @@ sub add_forum_do : Chained( 'base' ) : PathPart( 'forum/add-do' ) : Args( 0 ) {
 	    $c->request->param( 'name'     );
 	$url_name = $self->make_url_slug( $url_name );
 
+	# KBAKER 20250428: MySQL to PostgreSQL migration, if section is left empty,
+	# ask user to create one first
+	my $section = $c->request->param( 'section' );
+	if( ! $section ) {
+		$c->flash->{ error_msg } = 'Must create a Section first';
+		my $url = $c->uri_for( 'forum', 'add' );
+		$c->response->redirect( $url );
+		$c->detach();
+		return;
+	}
+
 	# Create forum
 	my $forum = $c->model( 'DB::Forum' )->create({
 		name          => $c->request->param( 'name'          ),
 		url_name      => $url_name,
 		display_order => $self->safe_param( $c, 'display_order' ),
 		description   => $c->request->param( 'description'   ),
-		section       => $c->request->param( 'section'       ),
+		section       => $section
 	});
 
 	# Shove a confirmation message into the flash

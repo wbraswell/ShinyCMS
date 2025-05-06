@@ -135,16 +135,33 @@ Process a newsletter addition.
 sub add_newsletter_do : Chained( 'base' ) : PathPart( 'add-do' ) : Args( 0 ) {
 	my ( $self, $c ) = @_;
 
+	# KBAKER 20250429: MySQL to PostgreSQL migration, if the title is empty, inform user to add a title.
+	# If no template exists, inform user they must create a template.
+	my $title = $self->safe_param( $c, 'title' );
+	my $template = $self->safe_param( $c, 'template' );
+	if( ! $title ) {
+		$c->flash->{ error_msg } = 'Must fill out Title';
+		$c->response->redirect( $c->uri_for( '/admin/newsletters/add' ) );
+		$c->detach();
+		return;
+	}
+	
+	if( ! $template ) {
+		$c->flash->{ error_msg } = 'Must choose a Template';
+		$c->response->redirect( $c->uri_for( '/admin/newsletters/add' ) );
+		$c->detach();
+		return;
+	}
 	# Extract page details from form
 	my $details = {
-		title    => $self->safe_param( $c, 'title'    ),
-		template => $self->safe_param( $c, 'template' ),
+		title => $title,
+		template => $template,
 	};
 
 	# Sanitise the url_title
 	my $url_title = $c->request->param( 'url_title' ) ?
-	    $c->request->param( 'url_title' ) :
-	    $c->request->param( 'title'     );
+		$c->request->param( 'url_title' ) :
+		$c->request->param( 'title'     );
 	$url_title = $self->make_url_slug( $url_title );
 	$details->{ url_title } = $url_title;
 
@@ -1693,24 +1710,32 @@ sub subscribe : Chained( 'get_list' ) : PathPart( 'subscribe' ) : Args( 0 ) {
 	# Create (or fetch and update) recipient record in database
 	my $email = $c->request->param( 'email' );
 	my $name  = $c->request->param( 'name'  );
-	my $token = $self->generate_email_token( $c, $email );
-	my $recipient = $c->model( 'DB::MailRecipient' )->update_or_create({
-		email => $email,
-		token => $token,
-		name  => $name,
-	});
+	# KBAKER 20250502: General debugging, when a name was given without an email, ShinyCMS would change
+	# all the names to the most recent name added. Requiring the email field fixes that problem.
+	if($email eq '') {
+		$c->flash->{ error_msg } = "Must enter an email";
+		my $uri = $c->uri_for( 'list', $c->stash->{ mailing_list }->id, 'edit' );
+		$c->response->redirect( $uri );
+	} else {
+		my $token = $self->generate_email_token( $c, $email );
+		my $recipient = $c->model( 'DB::MailRecipient' )->update_or_create({
+			email => $email,
+			token => $token,
+			name  => $name,
+		});
 
-	# Create a subscription to this list for this recipient
-	$c->stash->{ mailing_list }->subscriptions->create({
-		recipient => $recipient->id,
-	});
+		# Create a subscription to this list for this recipient
+		$c->stash->{ mailing_list }->subscriptions->create({
+			recipient => $recipient->id,
+		});
 
-	# Shove a confirmation message into the flash
-	$c->flash->{ status_msg } = 'Subscription added';
+		# Shove a confirmation message into the flash
+		$c->flash->{ status_msg } = 'Subscription added';
 
-	# Redirect to 'edit mailing list' page
-	my $uri = $c->uri_for( 'list', $c->stash->{ mailing_list }->id, 'edit' );
-	$c->response->redirect( $uri );
+		# Redirect to 'edit mailing list' page
+		my $uri = $c->uri_for( 'list', $c->stash->{ mailing_list }->id, 'edit' );
+		$c->response->redirect( $uri );
+	}
 }
 
 

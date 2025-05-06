@@ -133,34 +133,59 @@ Process adding a blog post.
 sub add_post_do : Chained( 'base' ) : PathPart( 'post/add-do' ) : Args( 0 ) {
 	my ( $self, $c ) = @_;
 
+	# KBAKER 20250428: MySQL to PostgreSQL migration, when grabbing these parameters from Catalyst,
+	# ask the user to give a title, post date and body if entries left blank
+
+	# Add the post
+	my $title = $self->safe_param( $c, 'title' );
+	if(! $title) {
+		$c->flash->{ error_msg } = 'You must fill out Title first';
+		$c->response->redirect( $c->uri_for( '/admin/blog/post/add' ) );
+		$c->detach();
+		return;
+	} 
+	
+	my $posted = $c->request->param( 'posted_date' );
+	if ( ! $posted ) {
+		$c->flash->{ error_msg } = 'You must select a date first';
+		$c->response->redirect( $c->uri_for( '/admin/blog/post/add' ) );
+		$c->detach();
+		return;
+	} 
+	
+	my $body = $self->safe_param( $c, 'body' );
+	if( ! $body ) {
+		$c->flash->{ error_msg } = 'You must fill out the Body first';
+		$c->response->redirect( $c->uri_for( '/admin/blog/post/add' ) );
+		$c->detach();
+		return;
+	}
+
 	# Tidy up the URL title
 	my $url_title = $c->request->param( 'url_title' ) ?
-	    $c->request->param( 'url_title' ) :
-	    $c->request->param( 'title'     );
+		$c->request->param( 'url_title' ) :
+		$title;
 	$url_title = $self->make_url_slug( $url_title );
 
 	# TODO: catch and fix duplicate year/month/url_title combinations
-
-	my $posted;
 	if ( $c->request->param( 'posted_date' ) ) {
 		$posted = $c->request->param( 'posted_date' ) .' '. $c->request->param( 'posted_time' );
 	}
-
+	
 	my $author_id = $c->user->id;
 	if ( $c->user->has_role( 'Blog Admin' ) and $c->request->param( 'author' ) ) {
 		$author_id = $c->request->param( 'author' );
 	}
 
-	# Add the post
 	my $hidden = $c->request->param( 'hidden' ) ? 1 : 0;
 	my $post = $c->model( 'DB::BlogPost' )->create({
 		blog      => 1,
-		title     => $self->safe_param( $c, 'title' ),
+		title     => $title,
 		url_title => $url_title,
 		author    => $author_id,
 		posted    => $posted,
 		hidden    => $hidden,
-		body      => $self->safe_param( $c, 'body' ),
+		body      => $body
 	});
 
 	# Create a related discussion thread, if requested

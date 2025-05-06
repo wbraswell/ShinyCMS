@@ -196,20 +196,38 @@ sub add_page_do : Chained( 'base' ) : PathPart( 'add-page-do' ) : Args( 0 ) {
 		redirect => '/admin/pages'
 	});
 
-	# Extract page details from form
+	# KBAKER 20250428: MySQL to PostgreSQL migration, empty values for $section
+	# and $menu_position creates an error when checking for collisions (my $collision below)
+	# thus making them required fields.
+	my $section = $c->request->param( 'section' );
+	my $menu_position = $self->safe_param( $c, 'menu_position' );
+	if(! $section) {
+		$c->flash->{ error_msg } = 'Must create a Section first';
+		$c->response->redirect( $c->uri_for( '/admin/pages/add' ) );
+		$c->detach();
+		return;
+	}
+	
+	if(! $menu_position) {
+		$c->flash->{ error_msg } = 'Must fill out Menu Position';
+		$c->response->redirect( $c->uri_for( '/admin/pages/add' ) );
+		$c->detach();
+		return;
+	}
+	
 	my $details = {
 		name          => $c->request->param( 'name'        ),
 		description   => $c->request->param( 'description' ),
-		section       => $c->request->param( 'section'     ),
+		section       => $section,
 		template      => $c->request->param( 'template'    ),
 		hidden        => $c->request->param( 'hidden'      ) ? 1 : 0,
-		menu_position => $self->safe_param( $c, 'menu_position' ),
+		menu_position => $menu_position
 	};
 
 	# Sanitise the url_name
 	my $url_name = $c->request->param( 'url_name' ) ?
-	    $c->request->param( 'url_name' ) :
-	    $self->safe_param( $c, 'name' );
+		$c->request->param( 'url_name' ) :
+		$self->safe_param( $c, 'name' );
 	$url_name = $self->make_url_slug( $url_name );
 	$details->{ url_name } = $url_name;
 
@@ -220,8 +238,8 @@ sub add_page_do : Chained( 'base' ) : PathPart( 'add-page-do' ) : Args( 0 ) {
 
 	# Check for a collision in the menu_position settings for this section
 	my $collision = $c->model( 'DB::CmsPage' )->search({
-		section       => $c->request->param( 'section'       ),
-		menu_position => $c->request->param( 'menu_position' ),
+		section       => $section,
+		menu_position => $menu_position,
 	})->count;
 
 	# Create page
@@ -301,6 +319,12 @@ Process a page update.
 sub edit_page_do : Chained( 'get_page' ) : PathPart( 'edit-do' ) : Args( 0 ) {
 	my ( $self, $c ) = @_;
 
+	# KBAKER 20250428: Same issues when editing the page. Must check if menu_position has a valid value.
+	my $menu_position = $self->safe_param( $c, 'menu_position' );
+	if($menu_position eq '') {
+		$menu_position = '0'
+	}
+
 	# Process deletions
 	if ( defined $c->request->param( 'delete' ) ) {
 		my $page = $c->stash->{ page };
@@ -336,7 +360,9 @@ sub edit_page_do : Chained( 'get_page' ) : PathPart( 'edit-do' ) : Args( 0 ) {
 		name          => $c->request->param( 'name'          ),
 		section       => $c->request->param( 'section'       ),
 		description   => $c->request->param( 'description'   ),
-		menu_position => $self->safe_param( $c, 'menu_position' ),
+		# KBAKER 20250428: Using $menu_position instead of grabbing directly from $self->safe_param()
+		# menu_position => $self->safe_param( $c, 'menu_position' ),
+		menu_position => $menu_position,
 		hidden        => $c->request->param( 'hidden'        ) ? 1 : 0,
 	};
 
@@ -391,7 +417,9 @@ sub edit_page_do : Chained( 'get_page' ) : PathPart( 'edit-do' ) : Args( 0 ) {
 	my $collision = $c->stash->{ page }->section->cms_pages->search({
 		id            => { '!=' => $c->stash->{ page }->id },
 		section       => $c->stash->{ section }->id,
-		menu_position => $c->request->param( 'menu_position' ),
+		# KBAKER 20250428: Using $menu_position instead of grabbing directly from $c->request->param()
+		# menu_position => $c->request->param( 'menu_position' ),
+		menu_position => $menu_position,
 	})->count;
 
 	# Update page
@@ -408,7 +436,8 @@ sub edit_page_do : Chained( 'get_page' ) : PathPart( 'edit-do' ) : Args( 0 ) {
 	if ( $collision ) {
 		$c->stash->{ page }->section->cms_pages->search({
 			id            => { '!=' => $c->stash->{ page }->id },
-			menu_position => { '>=' => $c->request->param( 'menu_position' ) },
+			# menu_position => { '>=' => $c->request->param( 'menu_position' ) },
+			menu_position => { '>=' => $menu_position },
 		})->update({
 			menu_position => \'menu_position + 1',
 		});

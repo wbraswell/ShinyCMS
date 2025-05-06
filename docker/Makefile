@@ -178,7 +178,7 @@ db-shell: ## Open a shell in the db container
 # Open a psql shell in the container
 
 db-psql: ## Open a psql shell in the db container
-	@$(DOCKER) exec db_$(LC_NAMESPACE) psql -U $(LC_NAMESPACE)_dbuser agendum
+	@$(DOCKER) exec db_$(LC_NAMESPACE) psql -U $(LC_NAMESPACE)_dbuser shinycms
 
 #### Server control
 

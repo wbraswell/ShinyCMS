@@ -127,10 +127,21 @@ sub add_event_do : Chained( 'base' ) : PathPart( 'add-event-do' ) : Args( 0 ) {
 	my $start_date = $c->request->param( 'start_date' ) .' '. $c->request->param( 'start_time' );
 	my $end_date   = $c->request->param( 'end_date'   ) .' '. $c->request->param( 'end_time'   );
 
+	# KBAKER 20250506: MySQL to PostgreSQL migration, if dates of proper form are not entered,
+	# ask user to fill out a start date/time and end date/time.
+	if ($start_date !~ /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/ 
+			|| $end_date !~ /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/
+	) {
+		$c->flash->{ error_msg } = 'Must fill out start and end date and start and end time';
+		$c->response->redirect( $c->uri_for( '/admin/events/add' ) );
+		$c->detach();
+		return;
+	}
+
 	# Sanitise the url_name
 	my $url_name = $c->request->param( 'url_name' ) ?
-	    $c->request->param( 'url_name' ) :
-	    $c->request->param( 'name'     );
+		$c->request->param( 'url_name' ) :
+		$c->request->param( 'name'     );
 	$url_name = $self->make_url_slug( $url_name );
 
 	# Add the item
