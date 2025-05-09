@@ -236,9 +236,19 @@ sub add_forum_do : Chained( 'base' ) : PathPart( 'forum/add-do' ) : Args( 0 ) {
 		return;
 	}
 
+	# KBAKER 20250509: MySQL to PostgreSQL migration, ensuring name field isn't empty
+	my $name = $c->request->param( 'name' );
+	if( ! $name ) {
+		$c->flash->{ error_msg } = 'Must add a Name entry';
+		my $url = $c->uri_for( 'forum', 'add' );
+		$c->response->redirect( $url );
+		$c->detach();
+		return;
+	}
+
 	# Create forum
 	my $forum = $c->model( 'DB::Forum' )->create({
-		name          => $c->request->param( 'name'          ),
+		name          => $name,
 		url_name      => $url_name,
 		display_order => $self->safe_param( $c, 'display_order' ),
 		description   => $c->request->param( 'description'   ),
@@ -386,10 +396,20 @@ sub add_section_do : Chained( 'base' ) : PathPart( 'section/add-do' ) : Args( 0 
 	    $c->request->param( 'name'     );
 	$url_name = $self->make_url_slug( $url_name );
 
+	# KBAKER 20250509: MySQL to PostgreSQL migration, no $name leads to failure, must add
+	# check to ensure user is notified they did not fill out that field.
+	my $name = $self->safe_param( $c, 'name' );
+	if( ! $name ) {
+		$c->flash->{ error_msg } = 'Must enter a Section name';
+		$c->response->redirect( $c->uri_for( '/admin/forums/section/add' ) );
+		$c->detach();
+		return;
+	}
+
 	# Create section
 	my $section = $c->model( 'DB::ForumSection' )->create({
 		url_name      => $url_name,
-		name          => $self->safe_param( $c, 'name'          ),
+		name          => $name,
 		display_order => $self->safe_param( $c, 'display_order' ),
 		description   => $self->safe_param( $c, 'description'   ),
 	});

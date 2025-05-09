@@ -243,7 +243,8 @@ Related object: L<ShinyCMS::Schema::Result::OrderItem>
 __PACKAGE__->has_many(
   "order_items",
   "ShinyCMS::Schema::Result::OrderItem",
-  { "foreign.order" => "self.id" },
+  # KBAKER 20250509: MySQL to PostgreSQL migration, replaced 'foreign.order' with 'foreign.order_id'
+  { "foreign.order_id" => "self.id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 

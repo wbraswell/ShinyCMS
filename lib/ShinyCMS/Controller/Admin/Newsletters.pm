@@ -815,11 +815,31 @@ Process a autoresponder email addition.
 sub add_autoresponder_email_do : Chained( 'get_autoresponder' ) : PathPart( 'email/add-do' ) : Args( 0 ) {
 	my ( $self, $c ) = @_;
 
+	# KBAKER 20250509: MySQL to PostgreSQL migration, user must provide a subject and a template when
+	# editing an autoresponder email
+	my $subject = $self->safe_param( $c, 'subject' );
+	if( ! $subject ) {
+		$c->flash->{ error_msg } = 'Must enter a Subject';
+		my $uri = $c->uri_for('autoresponder', $c->stash->{ autoresponder }->id, 'email', 'add');
+		$c->response->redirect( $uri );
+		$c->detach();
+		return;
+	}
+
+	my $template = $self->safe_param( $c, 'template' );
+	if( ! $template ) {
+		$c->flash->{ error_msg } = 'Must select a Template';
+		my $uri = $c->uri_for('autoresponder', $c->stash->{ autoresponder }->id, 'email', 'add');
+		$c->response->redirect( $uri );
+		$c->detach();
+		return;
+	}
+
 	# Extract email details from form
 	my $details = {
-		subject  => $self->safe_param( $c, 'subject'  ),
+		subject  => $subject,
 		delay    => $self->safe_param( $c, 'delay', 0 ),
-		template => $self->safe_param( $c, 'template' ),
+		template => $template,
 	};
 
 	# Create email
@@ -1167,6 +1187,40 @@ sub get_paid_list : Chained( 'base' ) : PathPart( 'paid-list' ) : CaptureArgs( 1
 	}
 }
 
+sub subscribe : Chained( 'get_paid_list' ) : PathPart( 'subscribe' ) : Args( 0 ) {
+	my ( $self, $c ) = @_;
+
+	# Create (or fetch and update) recipient record in database
+	my $email = $c->request->param( 'email' );
+	my $name  = $c->request->param( 'name'  );
+	# KBAKER 20250502: General debugging, when a name was given without an email, ShinyCMS would change
+	# all the names to the most recent name added. Requiring the email field fixes that problem.
+	if($email eq '') {
+		$c->flash->{ error_msg } = "Must enter an email";
+		my $uri = $c->uri_for( 'paid-list', $c->stash->{ paid_list }->id, 'edit' );
+		$c->response->redirect( $uri );
+	} else {
+		my $token = $self->generate_email_token( $c, $email );
+		my $recipient = $c->model( 'DB::MailRecipient' )->update_or_create({
+			email => $email,
+			token => $token,
+			name  => $name,
+		});
+
+		# Create a subscription to this list for this recipient
+		$c->stash->{ paid_list }->subscriptions->create({
+			recipient => $recipient->id,
+		});
+
+		# Shove a confirmation message into the flash
+		$c->flash->{ status_msg } = 'Subscription added';
+
+		# Redirect to 'edit mailing list' page
+		my $uri = $c->uri_for( 'paid-list', $c->stash->{ paid_list }->id, 'edit' );
+		$c->response->redirect( $uri );
+	}
+}
+
 
 =head2 edit_paid_list
 
@@ -1288,9 +1342,27 @@ Process a paid list email addition.
 sub add_paid_list_email_do : Chained( 'get_paid_list' ) : PathPart( 'email/add-do' ) : Args( 0 ) {
 	my ( $self, $c ) = @_;
 
+	# KBAKER 20250509: MySQL to PostgreSQL migration, ensuring subject and template are required fields
+	my $subject = $self->safe_param( $c, 'subject'  );
+	if(! $subject) {
+		$c->flash->{ error_msg } = 'Must enter a Subject';
+		my $uri = $c->uri_for('paid-list', $c->stash->{ paid_list }->id, 'email', 'add');
+		$c->response->redirect( $uri );
+		$c->detach();
+		return;
+	}
+	my $template = $self->safe_param( $c, 'template' );
+	if(! $template) {
+		$c->flash->{ error_msg } = 'Must create a Template';
+		my $uri = $c->uri_for('paid-list', $c->stash->{ paid_list }->id, 'email', 'add');
+		$c->response->redirect( $uri );
+		$c->detach();
+		return;
+	}
+
 	# Extract email details from form
 	my $details = {
-		subject  => $self->safe_param( $c, 'subject'  ),
+		subject  => $subject,
 		delay    => $self->safe_param( $c, 'delay', 0 ),
 		template => $self->safe_param( $c, 'template' ),
 	};

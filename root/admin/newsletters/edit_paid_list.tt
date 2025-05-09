@@ -83,7 +83,9 @@
 <h3>
 	Add Subscriber
 </h3>
-<form id="subscribe" action="[% c.uri_for( '/admin/newsletters/paid-list', paid_list.id, 'subscribe' ) %]" method="post">
+
+<!-- # KBAKER 20250509: MySQL to PostgreSQL migration, changed 'subscribe' to 'subscribers' -->
+<form id="subscribe" action="[% c.uri_for( '/admin/newsletters/paid-list', paid_list.id, 'subscribers' ) %]" method="post">
 	<p>
 		<label for="subscribe_name">Name</label>
 		<br><input type="text" class="textshort" id="subscribe_name" name="name">

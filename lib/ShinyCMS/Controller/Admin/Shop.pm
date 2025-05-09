@@ -669,6 +669,15 @@ sub add_category_do : Chained( 'base' ) : PathPart( 'category/add-do' ) : Args(0
 	    $c->request->param( 'name'     );
 	$url_name = $self->make_url_slug( $url_name );
 
+	# KBAKER 20250509: MySQL to PostgreSQL migration, to make sure the category name is unique
+	# in the database
+	if( $c->model( 'DB::ShopCategory' )->find({url_name => $url_name}) ) {
+		$c->flash->{ error_msg } = 'Category Name must be unique';
+		$c->response->redirect( $c->uri_for( '/admin/shop/category/add' ) );
+		$c->detach();
+		return;
+	}
+
 	# Create category
 	my $category = $c->model( 'DB::ShopCategory' )->create({
 		name        => $c->request->param( 'name'        ),

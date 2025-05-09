@@ -169,6 +169,13 @@ sub upload_do : Chained( 'base' ) : PathPart( 'upload' ) : Args {
 	$c->stash->{ upload_dir } .= '/'. $dir if $dir;
 
 	# Save file to appropriate location
+	# KBAKER 20250509: MySQL to PostgreSQL migration, user must select a file before uploading
+	if( ! $upload ) {
+		$c->flash->{ error_msg } = 'Must select a file';
+		$c->response->redirect( $c->uri_for( '/admin/filemanager/upload-file' ) );
+		$c->detach();
+		return;
+	}
 	my $save_as = $c->path_to( 'root', 'static', $c->stash->{ upload_dir }, $upload->filename );
 	$upload->copy_to( $save_as ) or die "Failed to write file '$save_as' because: $!,";
 

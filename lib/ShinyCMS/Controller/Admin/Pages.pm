@@ -214,12 +214,20 @@ sub add_page_do : Chained( 'base' ) : PathPart( 'add-page-do' ) : Args( 0 ) {
 		$c->detach();
 		return;
 	}
+
+	my $template = $c->request->param( 'template' );
+	if(! $template ) {
+		$c->flash->{ error_msg } = 'Must add a template first';
+		$c->response->redirect( $c->uri_for( '/admin/pages/add' ) );
+		$c->detach();
+		return;
+	}
 	
 	my $details = {
 		name          => $c->request->param( 'name'        ),
 		description   => $c->request->param( 'description' ),
 		section       => $section,
-		template      => $c->request->param( 'template'    ),
+		template      => $template,
 		hidden        => $c->request->param( 'hidden'      ) ? 1 : 0,
 		menu_position => $menu_position
 	};
