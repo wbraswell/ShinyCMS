@@ -1782,32 +1782,34 @@ sub subscribe : Chained( 'get_list' ) : PathPart( 'subscribe' ) : Args( 0 ) {
 	# Create (or fetch and update) recipient record in database
 	my $email = $c->request->param( 'email' );
 	my $name  = $c->request->param( 'name'  );
-	# KBAKER 20250502: General debugging, when a name was given without an email, ShinyCMS would change
-	# all the names to the most recent name added. Requiring the email field fixes that problem.
-	if($email eq '') {
+	# KBAKER 20250502: general debugging, when a name was given without an email, ShinyCMS would change
+	# all the names to the most recent name added. Requiring the email field fixes that problem
+	if( !$email ) {
 		$c->flash->{ error_msg } = "Must enter an email";
 		my $uri = $c->uri_for( 'list', $c->stash->{ mailing_list }->id, 'edit' );
 		$c->response->redirect( $uri );
-	} else {
-		my $token = $self->generate_email_token( $c, $email );
-		my $recipient = $c->model( 'DB::MailRecipient' )->update_or_create({
-			email => $email,
-			token => $token,
-			name  => $name,
-		});
-
-		# Create a subscription to this list for this recipient
-		$c->stash->{ mailing_list }->subscriptions->create({
-			recipient => $recipient->id,
-		});
-
-		# Shove a confirmation message into the flash
-		$c->flash->{ status_msg } = 'Subscription added';
-
-		# Redirect to 'edit mailing list' page
-		my $uri = $c->uri_for( 'list', $c->stash->{ mailing_list }->id, 'edit' );
-		$c->response->redirect( $uri );
+		$c->detach();
+		return;
 	}
+
+	my $token = $self->generate_email_token( $c, $email );
+	my $recipient = $c->model( 'DB::MailRecipient' )->update_or_create({
+		email => $email,
+		token => $token,
+		name  => $name,
+	});
+
+	# Create a subscription to this list for this recipient
+	$c->stash->{ mailing_list }->subscriptions->create({
+		recipient => $recipient->id,
+	});
+
+	# Shove a confirmation message into the flash
+	$c->flash->{ status_msg } = 'Subscription added';
+
+	# Redirect to 'edit mailing list' page
+	my $uri = $c->uri_for( 'list', $c->stash->{ mailing_list }->id, 'edit' );
+	$c->response->redirect( $uri );
 }
 
 
@@ -2016,6 +2018,19 @@ sub edit_template_do : Chained( 'base' ) : PathPart( 'template/save' ) : Args( 0
 
 	# Process deletions
 	if ( defined $c->request->param( 'delete' ) ) {
+
+		# KBAKER 20250512: general debugging, don't delete template if template is in use
+		my @templates = $c->model( 'DB::NewsletterTemplate' )->all;
+		if( scalar @templates != 0) {
+			# NEED UPDATE: provide user with pertinent information about which newsletter are
+			# using the template which they are trying to delete
+			$c->flash->{ error_msg } = 'Cannot delete template when in use';
+			my $uri = $c->uri_for( '/admin/newsletters/template', $template_id, 'edit' );
+			$c->response->redirect( $uri );
+			$c->detach();
+			return;
+		}
+
 		$c->stash->{ newsletter_template }->newsletter_template_elements->delete;
 		$c->stash->{ newsletter_template }->delete;
 

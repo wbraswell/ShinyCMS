@@ -12,7 +12,11 @@
 			Actions
 		</th>
 	</tr>
-	[%- FOREACH item IN news_items %]
+
+	<!-- KBAKER 20250513: MySQL to PostgreSQL migration, was initially using news_items but it was not capturing
+		the tables from news_items; changed to news_items.all so the FOREACH loop will capture all the
+		tables in news_items -->
+	[%- FOREACH item IN news_items.all %]
 	<tr class="showfocus">
 		<td>
 			[% item.title | html %]
@@ -22,7 +26,9 @@
 		</td>
 		<td>
 			<a class="action" href="[% c.uri_for( '/news', item.posted.year, item.posted.month, item.url_title ) %]">View</a>
-			<a class="action" href="[% c.uri_for( 'edit', item.id ) %]">Edit</a>
+
+			<!-- KBAKER 20250513: general debugging, fixed the link so it points to the correct path -->
+			<a class="action" href="[% c.uri_for( '/admin/news/edit', item.id ) %]">Edit</a>
 		</td>
 	</tr>
 	[%- END %]

@@ -854,6 +854,24 @@ sub edit_template_do : Chained( 'get_template' ) : PathPart( 'edit-do' ) : Args(
 
 	# Process deletions
 	if ( defined $c->request->param( 'delete' ) ) {
+		# KBAKER 20250512: general debugging, don't delete template if template is in use
+		my @templates = $c->model( 'DB::CmsTemplate' )->all;
+		if( scalar @templates != 0) {
+			# NEED UPDATE: provide user with pertinent information about which pages are
+			# using the template which they are trying to delete
+			$c->flash->{ error_msg } = 'Cannot delete template when in use';
+
+			my $template_id = $c->stash->{ cms_template }->id;
+			$c->stash->{ cms_template } = $c->model( 'DB::CmsTemplate' )->find({
+				id => $template_id,
+			});
+
+			my $uri = $c->uri_for( '/admin/pages/template', $template_id, 'edit' );
+			$c->response->redirect( $uri );
+			$c->detach();
+			return;
+		}
+
 		$c->stash->{ cms_template }->cms_template_elements->delete;
 		$c->stash->{ cms_template }->delete;
 
