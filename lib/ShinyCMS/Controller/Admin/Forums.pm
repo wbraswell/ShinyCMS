@@ -225,6 +225,18 @@ sub add_forum_do : Chained( 'base' ) : PathPart( 'forum/add-do' ) : Args( 0 ) {
 	    $c->request->param( 'name'     );
 	$url_name = $self->make_url_slug( $url_name );
 
+	# KBAKER 20250516: general bug fix, needed to ensure the URL name given by user
+	# is unique in the database 
+	if( $url_name ) {
+		if( $c->model( 'DB::Forum' )->find( {url_name => $url_name} )) {
+			$c->flash->{ error_msg } = 'URL Name must be unique';
+			my $url = $c->uri_for( 'forum', 'add' );
+			$c->response->redirect( $url );
+			$c->detach();
+			return;
+		} 
+	}
+
 	# KBAKER 20250428: MySQL to PostgreSQL migration, if section is left empty,
 	# ask user to create one first
 	my $section = $c->request->param( 'section' );
@@ -246,11 +258,21 @@ sub add_forum_do : Chained( 'base' ) : PathPart( 'forum/add-do' ) : Args( 0 ) {
 		return;
 	}
 
+	# KBAKER 20250428: general bug fix, verifying the display order is an integer 
+	my $display_order = $self->safe_param( $c, 'display_order' );
+	if( $display_order !~ /^\d+$/ ) {
+		$c->flash->{ error_msg } = 'Display Order must be a number';
+		my $url = $c->uri_for( 'forum', 'add' );
+		$c->response->redirect( $url );
+		$c->detach();
+		return;
+	}
+
 	# Create forum
 	my $forum = $c->model( 'DB::Forum' )->create({
 		name          => $name,
 		url_name      => $url_name,
-		display_order => $self->safe_param( $c, 'display_order' ),
+		display_order => $display_order,
 		description   => $c->request->param( 'description'   ),
 		section       => $section
 	});

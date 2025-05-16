@@ -84,8 +84,10 @@ sub vote : Chained( 'base' ) : PathPart( 'vote' ) : Args( 0 ) {
 
 	if ( $c->user_exists ) {
 		# Logged-in user voting
+		# KBAKER 20250516: MySQL to PostgreSQL migration, was searching for 'user' in database
+		# -> changed to 'user_id' as 'user' is a reserved word in postgres.
 		my $existing_vote = $poll->poll_user_votes->find({
-			user => $c->user->id,
+			user_id => $c->user->id,
 		});
 		if ( $existing_vote ) {
 			if ( $c->request->param( 'answer' ) == $existing_vote->answer->id ) {
@@ -122,9 +124,11 @@ sub vote : Chained( 'base' ) : PathPart( 'vote' ) : Args( 0 ) {
 				$anon_vote->delete;
 			}
 			# Store the user-linked vote
+			# KBAKER 20250516: MySQL to PostgreSQL migration, was searching for 'user' in database
+			# -> changed to 'user_id' as 'user' is a reserved word in postgres.
 			$poll->poll_user_votes->create({
 				answer     => $c->request->param( 'answer' ),
-				user       => $c->user->id,
+				user_id       => $c->user->id,
 				ip_address => $c->request->address,
 			});
 		}

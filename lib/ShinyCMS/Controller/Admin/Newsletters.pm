@@ -535,8 +535,14 @@ sub list_autoresponder_subscribers : Chained( 'get_autoresponder' ) : PathPart( 
 	my ( $self, $c ) = @_;
 
 	# Fetch the list of subscribers
+	# KBAKER 20250516: general bug fix, ensuring emails for the autoresponder were added,
+	# if not, exit
 	my @subscribers;
-	my @q_emails = $c->stash->{ autoresponder }->autoresponder_emails->first->queued_emails->all;
+	my $f_emails = $c->stash->{ autoresponder }->autoresponder_emails->first;
+	if( !$f_emails ) {
+		return
+	}
+	my @q_emails = $f_emails->queued_emails->all;
 	foreach my $q_email ( @q_emails ) {
 		my $recipient = $q_email->recipient;
 		$recipient->{ subscribed } = $q_email->created;

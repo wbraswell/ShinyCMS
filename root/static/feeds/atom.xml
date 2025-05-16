@@ -3,19 +3,19 @@
   <id>tag:shiny.cms,2010:blog</id>
   <link rel="self" href="http://localhost:5000/static/feeds/atom.xml" type="application/atom+xml"/>
   <link rel="alternate" href="http://localhost:5000/blog" type="text/html"/>
-  <updated>2025-05-13T15:47:59Z</updated>
+  <updated>2025-05-16T00:42:45Z</updated>
   <title>ShinySite</title>
   <subtitle>Recent blog posts from ShinySite</subtitle>
   <entry>
-    <id>tag:shiny.cms,2010:blog:2025:5:blog</id>
-    <link rel="alternate" href="http://localhost:5000/blog/2025/5/blog" type="text/html"/>
+    <id>tag:shiny.cms,2010:blog:2025:5:f</id>
+    <link rel="alternate" href="http://localhost:5000/blog/2025/5/f" type="text/html"/>
     <author>
       <name>Admin</name>
     </author>
     <updated>2025-05-13T12:00:00Z</updated>
-    <title>blog</title>
+    <title>f</title>
     <content type="xhtml">
-      <div xmlns="http://www.w3.org/1999/xhtml"><p>this is a blog post</p>
+      <div xmlns="http://www.w3.org/1999/xhtml"><p>sdf</p>
 </div>
     </content>
   </entry>

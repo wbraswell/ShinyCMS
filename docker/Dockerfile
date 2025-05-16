@@ -5,7 +5,8 @@ WORKDIR /app
 
 RUN apt-get update
 RUN apt-get install -yV postgresql-client git vim build-essential \
-	libssl-dev dnsutils libxml2-dev zlib1g-dev libexpat-dev
+	# KBAKER 20250516: temporarily add postfix to test SMTP errors in ShinyCMS
+	libssl-dev dnsutils libxml2-dev zlib1g-dev libexpat-dev postfix
 
 # Clean up
 
