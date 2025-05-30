@@ -23,7 +23,8 @@ $(document).ready(
 <form id="add_post" action="add-do" method="post">
 [%- END %]
 	<p>
-		<label for="title">Title</label>
+		<!-- KBAKER 20250530: added red asterisk for required field -->
+		<div style="color:red; display: inline-block;">*</div> <label for="title">Title</label>
 		<br><input class="textshort" type="text" id="title" name="title" value="[% blog_post.title | html %]">
 		[%- IF blog_post.id %]
 		<span class="small">
@@ -50,13 +51,15 @@ $(document).ready(
 	</p>
 	[%- END %]
 	<p>
-		<label for="posted_pick">Posted</label>
+		<!-- KBAKER 20250530: added red asterisk for required field -->
+		<div style="color:red; display: inline-block;">*</div> <label for="posted_pick">Posted</label>
 		<br><input id="posted_pick" class="textveryshort" type="text" value="[% blog_post.posted.day %] [% blog_post.posted.month_abbr %] [% blog_post.posted.year %]">
 		<input id="posted_time" class="textveryshort" type="text" name="posted_time" value="[% blog_post.posted.strftime('%H:%M') %]">
 		<input id="posted_date" type="hidden" name="posted_date" value="[% blog_post.posted.ymd %]">
 	</p>
 	<p>
-		<label for="body">Body</label>
+		<!-- KBAKER 20250530: added red asterisk for required field -->
+		<div style="color:red; display: inline-block;">*</div> <label for="body">Body</label>
 		<br><textarea class="ckeditor" id="body" name="body" cols="60" rows="4">[% blog_post.body | html %]</textarea>
 	</p>
 	<p>

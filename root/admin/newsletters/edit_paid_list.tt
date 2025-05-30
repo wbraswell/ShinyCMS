@@ -11,7 +11,8 @@
 <form id="add_paid_list" action="[% c.uri_for( '/admin/newsletters/paid-list/add-do' )%]" method="post">
 [%- END %]
 	<p>
-		<label for="name">Name</label>
+		<!-- KBAKER 20250530: added red asterisk for required field -->
+		<div style="color:red; display: inline-block;">*</div> <label for="name">Name</label>
 		<br><input class="textlong" type="text" id="name" name="name" value="[% paid_list.name | html %]">
 	</p>
 	<p>

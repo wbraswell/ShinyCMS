@@ -11,15 +11,18 @@
 <form id="add_forum" action="[% c.uri_for( '/admin/forums/forum/add-do' ) %]" method="post">
 [%- END %]
 	<p>
-		<label for="name">Forum name</label>
+		<!-- KBAKER 20250530: added red asterisk for required field -->
+		<div style="color:red; display: inline-block;">*</div> <label for="name">Forum Name</label>
 		<br><input type="text" class="textshort" id="name" name="name" value="[% forum.name | html %]">
 	</p>
 	<p>
-		<label for="name">URL name</label>
+		<!-- KBAKER 20250530: added red asterisk for required field -->
+		<div style="color:red; display: inline-block;">*</div> <label for="name">URL name</label>
 		<br><input type="text" class="textshort" id="url_name" name="url_name" value="[% forum.url_name | html %]">
 	</p>
 	<p>
-		<label for="section">Section</label>
+		<!-- KBAKER 20250530: added red asterisk for required field -->
+		<div style="color:red; display: inline-block;">*</div> <label for="section">Section</label>
 		<br><select id="section" name="section">
 			[%- FOREACH section IN sections %]
 			[%- IF section.id == forum.section.id %]
@@ -31,7 +34,8 @@
 		</select>
 	</p>
 	<p>
-		<label for="menu_position">Display order</label>
+		<!-- KBAKER 20250530: added red asterisk for required field -->
+		<div style="color:red; display: inline-block;">*</div> <label for="menu_position">Display order</label>
 		<br><input class="textshort" type="text" id="display_order" name="display_order" value="[% forum.display_order | html %]">
 	</p>
 	<p>

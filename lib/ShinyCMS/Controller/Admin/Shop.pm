@@ -294,7 +294,14 @@ sub add_item_do : Chained( 'base' ) : PathPart( 'item/add-do' ) : Args( 0 ) {
 	}
 
 	# Set up categories
+	# KBAKER 20250530: general debugging, making the category entry mandatory
 	my $categories = $c->request->params->{ categories };
+	if(! $categories) {
+		$c->flash->{ error_msg } = 'You must create a category first.';
+		$c->response->redirect( $c->uri_for( '/admin/shop/item/add' ) );
+		$c->detach();
+		return;
+	}
 	$categories = [ $categories ] unless ref $categories eq 'ARRAY';
 	foreach my $category ( @$categories ) {
 		$item->shop_item_categories->create({

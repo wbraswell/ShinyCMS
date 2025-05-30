@@ -11,7 +11,8 @@
 <form id="add_section" action="[% c.uri_for( '/admin/forums/section/add-do' ) %]" method="post">
 [%- END %]
 	<p>
-		<label for="name">Section name</label>
+		<!-- KBAKER 20250530: added red asterisk for required field -->
+		<div style="color:red; display: inline-block;">*</div> <label for="name">Section Name</label>
 		<br><input type="text" class="textshort" id="name" name="name" value="[% section.name | html %]">
 	</p>
 	<p>
@@ -19,7 +20,8 @@
 		<br><input type="text" class="textshort" id="url_name" name="url_name" value="[% section.url_name | html %]">
 	</p>
 	<p>
-		<label for="display_order">Display order</label>
+		<!-- KBAKER 20250530: added red asterisk for required field -->
+		<div style="color:red; display: inline-block;">*</div> <label for="display_order">Display Order</label>
 		<br><input class="textshort" type="text" id="display_order" name="display_order" value="[% section.display_order | html %]">
 	</p>
 	<p>

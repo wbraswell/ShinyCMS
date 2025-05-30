@@ -46,7 +46,8 @@ function pagePreview(pageForm) {
 		<br><textarea id="description" name="description">[% page.description | html %]</textarea>
 	</p>
 	<p>
-		<label for="section">Section</label>
+		<!-- KBAKER 20250530: added red asterisk for required field -->
+		<div style="color:red; display: inline-block;">*</div> <label for="section">Section</label>
 		<br><select id="section" name="section">
 			<!-- <option value="">(none)</option> -->
 			[%- FOREACH section IN sections %]
@@ -59,12 +60,14 @@ function pagePreview(pageForm) {
 		</select>
 	</p>
 	<p>
-		<label for="menu_position">Menu Position</label>
+		<!-- KBAKER 20250530: added red asterisk for required field -->
+		<div style="color:red; display: inline-block;">*</div> <label for="menu_position">Menu Position</label>
 		<br><input class="textshort" type="text" id="menu_position" name="menu_position" value="[% page.menu_position | html %]">
 	</p>
 	[%- IF c.user.has_role( 'CMS Template Admin' ) OR NOT page.id %]
 	<p>
-		<label for="template">Template</label>
+		<!-- KBAKER 20250530: added red asterisk for required field -->
+		<div style="color:red; display: inline-block;">*</div> <label for="template">Template</label>
 		<br><select id="template" name="template">
 				[%- FOREACH temp IN templates %]
 				<option [% IF page.template.id == temp.id %]selected="selected" [% END %]value="[% temp.id %]">[% temp.name | html %]</option>

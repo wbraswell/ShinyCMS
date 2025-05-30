@@ -34,7 +34,8 @@ $(document).ready(
 <form id="add_newsletter" action="[% c.uri_for( '/admin/newsletters/add-do' ) %]" method="post">
 [%- END %]
 	<p>
-		<label for="title">Title</label>
+		<!-- KBAKER 20250530: added red asterisk for required field -->
+		<div style="color:red; display: inline-block;">*</div> <label for="title">Title</label>
 		<br><input class="textlong" type="text" id="title" name="title" value="[% newsletter.title | html %]">
 	</p>
 	<p>
@@ -43,7 +44,8 @@ $(document).ready(
 	</p>
 	[%- IF c.user.has_role( 'Newsletter Template Admin' ) OR NOT newsletter.id %]
 	<p>
-		<label for="template">Template</label>
+		<!-- KBAKER 20250530: added red asterisk for required field -->
+		<div style="color:red; display: inline-block;">*</div> <label for="template">Template</label>
 		<br><select id="template" name="template">
 				[%- FOREACH temp IN templates %]
 				<option [% IF newsletter.template.id == temp.id %]selected="selected" [% END %]value="[% temp.id %]">[% temp.name | html %]</option>

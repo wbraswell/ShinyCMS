@@ -13,7 +13,8 @@ function changeSrc() {
 
 <form id="edit_user" method="post" enctype="multipart/form-data" action="[% c.uri_for( '/admin/users/save' ) %]">
 	<p>
-		<label for="username">
+		<!-- KBAKER 20250530: added red asterisk for required field -->
+		<div style="color:red; display: inline-block;">*</div> <label for="username">
 			Username
 		</label>
 		[%- IF user.id %]
@@ -27,14 +28,16 @@ function changeSrc() {
 	</p>
 	[%- UNLESS user.id %]
 	<p>
-		<label for="password">
+		<!-- KBAKER 20250530: added red asterisk for required field -->
+		<div style="color:red; display: inline-block;">*</div> <label for="password">
 			Password
 		</label>
 		<br><input type="password" class="textlong" id="password" name="password" size="50" maxlength="200">
 	</p>
 	[%- END %]
 	<p>
-		<label for="email">
+		<!-- KBAKER 20250530: added red asterisk for required field -->
+		<div style="color:red; display: inline-block;">*</div> <label for="email">
 			Real Email (private - must be a valid email address)
 		</label>
 		<br><input type="text" class="textlong" id="email" name="email" value="[% user.email | html %]" size="50" maxlength="200">

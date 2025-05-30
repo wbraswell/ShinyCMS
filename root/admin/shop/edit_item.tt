@@ -46,12 +46,14 @@ $(document).ready(
 		[%- END %]
 	</p>
 	<p>
-		<label for="code">Item Code</label>
+		<!-- KBAKER 20250530: added red asterisk for required field -->
+		<div style="color:red; display: inline-block;">*</div> <label for="code">Item Code</label>
 		<br><input class="textshort" type="text" name="code" value="[% item.code | html %]">
 	</p>
 	[%- IF c.user.has_role( 'CMS Template Admin' ) OR NOT item.id %]
 	<p>
-		<label for="product_type">Product Type</label>
+		<!-- KBAKER 20250530: added red asterisk for required field -->
+		<div style="color:red; display: inline-block;">*</div> <label for="product_type">Product Type</label>
 		<br><select id="product_type" name="product_type">
 				[%- FOREACH temp IN product_types %]
 				<option [% IF item.product_type.id == temp.id %]selected="selected" [% END %]value="[% temp.id %]">[% temp.name | html %]</option>
@@ -87,7 +89,8 @@ $(document).ready(
 		</select>
 	</p>
 	<p>
-		<label for="price">Price</label>
+		<!-- KBAKER 20250530: added red asterisk for required field -->
+		<div style="color:red; display: inline-block;">*</div> <label for="price">Price</label>
 		<br><input class="textshort" type="text" name="price" value="[% item.price %]">
 	</p>
 	<p>

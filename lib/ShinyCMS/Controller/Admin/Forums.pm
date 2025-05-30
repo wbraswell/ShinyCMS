@@ -428,11 +428,21 @@ sub add_section_do : Chained( 'base' ) : PathPart( 'section/add-do' ) : Args( 0 
 		return;
 	}
 
+	# KBAKER 20250530: general debugging, checking for display_order is integer
+	my $display_order = $self->safe_param( $c, 'display_order' );
+	if( $display_order !~ /^\d+$/ ) {
+		$c->flash->{ error_msg } = 'Display Order must be a number';
+		my $url = $c->uri_for( 'forum', 'add' );
+		$c->response->redirect( $url );
+		$c->detach();
+		return;
+	}
+
 	# Create section
 	my $section = $c->model( 'DB::ForumSection' )->create({
 		url_name      => $url_name,
 		name          => $name,
-		display_order => $self->safe_param( $c, 'display_order' ),
+		display_order => $display_order,
 		description   => $self->safe_param( $c, 'description'   ),
 	});
 

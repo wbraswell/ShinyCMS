@@ -74,6 +74,15 @@ sub view_section : Chained( 'base' ) : PathPart( '' ) : Args( 1 ) {
 	$c->stash->{ section } = $c->model( 'DB::ForumSection' )->find({
 		url_name => $section,
 	});
+
+	# KBaker 20250530: general debugging, added checking if section exists
+	if( !$c->stash->{ section } ) {
+		$c->flash->{ error_msg } = 'Section not found';
+		$c->response->redirect( $c->uri_for( '/forums/post/', $section) );
+		$c->detach();
+		return;
+	}
+
 	my @forums = $c->stash->{ section }->sorted_forums;
 
 	$c->stash->{ forum_sections } = \@forums;
@@ -210,6 +219,11 @@ Start a new thread.
 sub add_post : Chained( 'base' ) : PathPart( 'post' ) : Args( 2 ) {
 	my ( $self, $c, $section_name, $forum_name ) = @_;
 
+	# KBAKER 20250530: general debugging, adding $section_name and $forum_name to the stash for use
+	# in add_post_do()
+	$c->stash->{ section_name } = $section_name;
+	$c->stash->{ forum_name } = $forum_name;
+
 	# Check to make sure we have a logged-in user
 	unless ( $c->user_exists ) {
 		$c->stash->{ error_msg } = 'You must be logged in to post on the forums.';
@@ -250,10 +264,28 @@ sub add_post_do : Chained( 'base' ) : PathPart( 'add-post-do' ) : Args( 0 ) {
 	my $body = $c->request->param( 'body' );
 	$body    = $c->model( 'FilterHTML' )->filter( $body );
 
+	# KBAKER: general debugging, added checking for required fields for post
+	my $section_name = $c->request->param( 'section_name' );
+	my $forum_name = $c->request->param( 'forum_name' );
+	if ( !$body ) {
+		$c->flash->{ error_msg } = 'Need to add a body.';
+		$c->response->redirect( $c->uri_for( "/forums/post/$section_name/$forum_name" ) );
+		$c->detach();
+		return;
+	}
+
+	my $title = $c->request->param( 'title' );
+	if( !$title ) {
+		$c->flash->{ error_msg } = 'Need to add a title.';
+		$c->response->redirect( $c->uri_for( "/forums/post/$section_name/$forum_name" ) );
+		$c->detach();
+		return;
+	}
+
 	# Add the post
 	my $post = $c->model( 'DB::ForumPost' )->create({
 		author    => $c->user->id,
-		title     => $c->request->param( 'title' ),
+		title     => $title,
 		url_title => $url_title,
 		body      => $body,
 		forum     => $c->request->param( 'forum' ),
