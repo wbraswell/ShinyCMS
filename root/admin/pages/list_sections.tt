@@ -21,7 +21,11 @@
 			[% section.description | html %]
 		</td>
 		<td>
+		<!--- KBAKER 20250603: general debugging, if page associated with this section doesn't exist,
+				hide the View button, otherwise show it -->
+		[% IF section.cms_pages.first %]
 			<a class="action" href="[% c.uri_for( '/pages', section.url_name ) %]">View</a>
+		[% END %]
 			<a class="action" href="[% c.uri_for( 'section', section.id, 'edit' ) %]">Edit</a>
 		</td>
 	</tr>

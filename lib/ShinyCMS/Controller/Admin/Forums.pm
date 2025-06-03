@@ -418,6 +418,14 @@ sub add_section_do : Chained( 'base' ) : PathPart( 'section/add-do' ) : Args( 0 
 	    $c->request->param( 'name'     );
 	$url_name = $self->make_url_slug( $url_name );
 
+	# KBAKER 20250602: general debugging, ensuring URL Name is unique to avoid database conflicts
+	if( $c->model('DB::ForumSection')->find({url_name => $url_name}) ) {
+		$c->flash->{ error_msg } = 'URL Name must be unique';
+		$c->response->redirect( $c->uri_for( '/admin/forums/section/add' ) );
+		$c->detach();
+		return;
+	}
+
 	# KBAKER 20250509: MySQL to PostgreSQL migration, no $name leads to failure, must add
 	# check to ensure user is notified they did not fill out that field.
 	my $name = $self->safe_param( $c, 'name' );
@@ -432,8 +440,16 @@ sub add_section_do : Chained( 'base' ) : PathPart( 'section/add-do' ) : Args( 0 
 	my $display_order = $self->safe_param( $c, 'display_order' );
 	if( $display_order !~ /^\d+$/ ) {
 		$c->flash->{ error_msg } = 'Display Order must be a number';
-		my $url = $c->uri_for( 'forum', 'add' );
+		my $url = $c->uri_for( '/admin/forums/section/add' );
 		$c->response->redirect( $url );
+		$c->detach();
+		return;
+	}
+
+	# KBAKER 20250602: general debugging, ensuring Display Order is unique to avoid database conflicts
+	if( $c->model('DB::ForumSection')->find({display_order => $display_order}) ) {
+		$c->flash->{ error_msg } = 'Display Order must be unique';
+		$c->response->redirect( $c->uri_for( '/admin/forums/section/add' ) );
 		$c->detach();
 		return;
 	}

@@ -378,10 +378,29 @@ sub save_user : Chained( 'base' ) : PathPart( 'save' ) : Args( 0 ) {
 	}
 	else {
 		Dwarn('DEBUG: in Controller::Admin::Users::save_user(), top of `if ( $user_id )` else conditional block');
+
+		# KBAKER 20250602: MySQL to PostgreSQL migration, the absence of a username caused ShinyCMS to crash
+		my $new_username = $self->safe_param( $c, 'username' );
+		if( ! $new_username ) {
+			$c->flash->{ error_msg } = 'Must create a Username';
+			$c->response->redirect( $c->uri_for( '/admin/users/add' ) );
+			$c->detach();
+			return;
+		}
+
+		# KBAKER 20250602: MySQL to PostgreSQL migration, the absence of a password caused ShinyCMS to crash
+		my $new_password = $self->safe_param( $c, 'password' );
+		if( ! $new_password ) {
+			$c->flash->{ error_msg } = 'Must add a Password';
+			$c->response->redirect( $c->uri_for( '/admin/users/add' ) );
+			$c->detach();
+			return;
+		}
+
 		# Create new user
 		$user = $c->model( 'DB::User' )->create({
-			username      => $self->safe_param( $c, 'username'      ),
-			password      => $self->safe_param( $c, 'password'      ),
+			username      => $new_username,
+			password      => $new_password,
 			email         => $email,
 			display_email => $self->safe_param( $c, 'display_email' ),
 			display_name  => $self->safe_param( $c, 'display_name'  ),

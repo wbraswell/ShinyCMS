@@ -121,10 +121,19 @@ sub add_do : Chained( 'base' ) : PathPart( 'add-do' ) : Args( 0 ) {
 
 	# TODO: catch and fix duplicate year/month/url_title combinations
 
+	# KBAKER 20250602: general debugging, making the title field mandatory
+	my $title = $c->request->param( 'title' );
+	if( !$title ) {
+		$c->flash->{ error_msg } = 'Must add a title';
+		$c->response->redirect( $c->uri_for( '/admin/news/add' ) );
+		$c->detach();
+		return;
+	}
+
 	# Add the item
 	my $item = $c->model( 'DB::NewsItem' )->create({
 		author      => $c->user->id,
-		title       => $c->request->param( 'title'       ),
+		title       => $title,
 		url_title   => $url_title,
 		body        => $c->request->param( 'body'        ),
 		related_url => $c->request->param( 'related_url' ),

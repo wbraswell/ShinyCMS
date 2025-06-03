@@ -23,7 +23,8 @@ $(document).ready(
 <form id="add_item" action="[% c.uri_for( '/admin/news/add-do' ) %]" method="post">
 [%- END %]
 	<p>
-		<label for="title">Title</label>
+		<!-- KBAKER 20250602: added red asterisk for required field -->
+		<div style="color:red; display: inline-block;">*</div> <label for="title">Title</label>
 		<br><input class="textshort" type="text" id="title" name="title" value="[% news_item.title | html %]">
 		[%- IF news_item.id %]
 		<span class="small">

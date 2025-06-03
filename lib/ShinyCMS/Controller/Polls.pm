@@ -89,6 +89,17 @@ sub vote : Chained( 'base' ) : PathPart( 'vote' ) : Args( 0 ) {
 		my $existing_vote = $poll->poll_user_votes->find({
 			user_id => $c->user->id,
 		});
+
+		# KBAKER 20250602: general debugging, prevents users from voting if poll has no available
+		# answers they can vote on
+		my $answer = $c->request->param( 'answer' );
+		if( ! $answer ) {
+			$c->flash->{ error_msg } = 'Poll must have at least one answer to vote';
+			$c->response->redirect( $c->uri_for( $poll->id ) );
+			$c->detach();
+			return;
+		}
+
 		if ( $existing_vote ) {
 			if ( $c->request->param( 'answer' ) == $existing_vote->answer->id ) {
 				$c->flash->{ status_msg } = 'You have already voted for \''.

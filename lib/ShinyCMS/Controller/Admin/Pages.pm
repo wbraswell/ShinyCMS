@@ -583,6 +583,15 @@ sub add_section_do : Chained( 'base' ) : PathPart( 'section/add-do' ) : Args( 0 
 	    $self->safe_param( $c, 'name' );
 	$url_name = $self->make_url_slug( $url_name );
 
+	# KBAKER 20250603: general debugging, check for database collision with an already existing
+	# entry for url_name
+	if( $c->model( 'DB::CmsSection' )->find({ url_name => $url_name }) ) {
+		$c->flash->{ error_msg } = 'URL Name must be unique';
+		$c->response->redirect( $c->uri_for( '/admin/pages/section/add' ) );
+		$c->detach();
+		return;
+	}
+
 	# Create section
 	my $section = $c->model( 'DB::CmsSection' )->create({
 		name          => $c->request->param( 'name'          ),
