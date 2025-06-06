@@ -250,6 +250,15 @@ sub add_page_do : Chained( 'base' ) : PathPart( 'add-page-do' ) : Args( 0 ) {
 		menu_position => $menu_position,
 	})->count;
 
+	# KBAKER 20250604: general debugging, checking for url_name database collision
+	# before page creation
+	if( $c->model( 'DB::CmsPage' )->find( {url_name => $url_name }) ) {
+		$c->flash->{ error_msg } = 'URL Name must be unique';
+		$c->response->redirect( $c->uri_for( '/admin/pages/add' ) );
+		$c->detach();
+		return;
+	}
+
 	# Create page
 	my $page = $c->model( 'DB::CmsPage' )->create( $details );
 
