@@ -1,0 +1,9 @@
+Revision history for {{$dist->name}}.
+
+{{$NEXT}}
+
+  - HOLIDAY EDITION: Happy Father's Day!
+  - Codename FOOBAR
+  - Initial beta version
+  - Support FOO
+  - Tests, run basic FOOBAR tests
