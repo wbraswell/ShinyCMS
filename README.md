@@ -37,7 +37,14 @@ You can install ShinyCMS by pasting one of the commands below into a terminal:
 
 [[[ NEED ADD DOCKER COMMANDS FOR AUTOMATIC INSTALL ]]]
 
-[[[ NEED ADD CPAN COMMANDS FOR MANUAL INSTALL ]]]
+[[[ NEED TEST THE FOLLOWING CPAN COMMANDS FOR MANUAL INSTALL ]]]
+$ dzil authordeps --missing | cpanm -v
+$ cpanm -v --installdeps .
+$ cpanm -v --installdeps --force .  # Net::Akismet
+$ sudo apt-get install postgresql libpq-dev
+$ cpanm -v --installdeps --with-feature=postgres .
+$ ./bin/database/build-with-demo-data
+$ prove -lr t/
 
 
 Author
