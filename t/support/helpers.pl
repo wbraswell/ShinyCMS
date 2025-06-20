@@ -49,7 +49,12 @@ sub get_config {
     return $config if $config;
 
     my $config_file = $shinyroot.'/config/shinycms.conf';
-    my $reader = Config::General->new( $config_file );
+    # KBAKER 20250620: ShinyCMS test debugging, configured $reader to pull environmental variables to run testing
+    my $reader = Config::General->new(
+        -InterPolateVars => 1,
+        -InterPolateEnv  => 1,
+        -ConfigFile => $config_file,
+    );
     my %config = $reader->getall;
 
     if ( $ENV{ SHINYCMS_TEST } ) {
@@ -71,13 +76,13 @@ and connecting to database if necessary.
     my $schema = get_schema();
 
 =cut
-
+use Devel::Dwarn;
 sub get_schema {
     return $schema if $schema;
 
     my $config = get_config();
     my $connect_info = $config->{ 'Model::DB' }->{ connect_info };
-
+    print 'in t/support/helpers.t get_schema(), have $config_info = ', Dwarn($connect_info), "\n";
     $schema = ShinyCMS::Schema->connect( $connect_info );
     return $schema;
 }

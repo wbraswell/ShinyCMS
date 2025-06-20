@@ -47,6 +47,7 @@ on 'test' => sub {
     requires 'Test::Pod';
     requires 'Test::Pod::Coverage';
     requires 'Test::WWW::Mechanize::Catalyst::WithContext';
+    requires 'DBD::Pg';
 };
 
 feature 'postgres', 'PostgreSQL Support' => sub {
