@@ -55,6 +55,9 @@ $t->submit_form_ok({
 		title => 'This is a test blog post',
 		body  => 'This is some test content.',
 		tags  => 'test, tests',
+		# KBAKER 20250808: test debugging, added entries to test function due to this test failing without these entries
+		posted_date => DateTime->now->ymd,			# added required fields in the blog creation field on the admin controller
+		posted_time => '12:34:56',
 	}},
 	'Submitted form to create blog post'
 );
@@ -62,6 +65,7 @@ $t->title_is(
 	'Edit blog post - ShinyCMS',
 	'Redirected to edit page for newly created blog post'
 );
+
 my @inputs1 = $t->grep_inputs({ name => qr{^url_title$} });
 ok(
 	$inputs1[0]->value eq 'this-is-a-test-blog-post',
@@ -72,7 +76,10 @@ ok(
 $t->submit_form_ok({
 	form_id => 'edit_post',
 	fields => {
-		title => 'Blog post updated by test suite'
+		title => 'Blog post updated by test suite',
+		# KBAKER 20250808: test debugging, added entries to test function due to this test failing without these entries
+		posted_date => DateTime->now->ymd,
+		posted_time => '12:34:56',
 	}},
 	'Submitted form to update blog post'
 );
@@ -139,6 +146,8 @@ $t->post_ok(
 	},
 	'Submitted request to delete second test blog post'
 );
+# KBAKER 20250808: test debugging, testing if blog post list exists after deletion
+$t->get_ok('/admin/blog', 'Fetched blog post list after deletion');
 # View list of blog posts
 $t->title_is(
 	'Blog Posts - ShinyCMS',

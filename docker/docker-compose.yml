@@ -54,7 +54,9 @@ services:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     ports:
-      - "5432:5432" # For Development only
+    # KBAKER 20250808: previously used port configuration 5432:5432 and changed to 5433:5432 so port 5433 is used on the local system while preserving
+    # port 5432 for postgres within the docker image
+      - "5433:5432" # For Development only
 volumes:
   db_shinycms_data:
     name: db_shinycms_data

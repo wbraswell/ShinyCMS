@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
   <id>tag:shiny.cms,2010:blog</id>
-  <link rel="self" href="http://localhost:5000/static/feeds/atom.xml" type="application/atom+xml"/>
-  <link rel="alternate" href="http://localhost:5000/blog" type="text/html"/>
-  <updated>2025-06-06T15:58:15Z</updated>
+  <link rel="self" href="http://localhost/static/feeds/atom.xml" type="application/atom+xml"/>
+  <link rel="alternate" href="http://localhost/blog" type="text/html"/>
+  <updated>2025-08-08T16:45:19Z</updated>
   <title>ShinySite</title>
   <subtitle>Recent blog posts from ShinySite</subtitle>
 </feed>

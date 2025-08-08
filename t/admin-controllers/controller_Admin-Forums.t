@@ -49,6 +49,9 @@ $t->submit_form_ok({
 	form_id => 'add_section',
 	fields => {
 		name => 'Test Section',
+		# KBAKER 20250808: test debugging, added entries to test function due to this test failing without these entries
+		display_order => '1',		# added entry for testing
+		url_name => ''
 	}},
 	'Submitted form to create new forum section'
 );
@@ -166,7 +169,8 @@ $t->title_is(
 $t->submit_form_ok({
 	form_id => 'edit_post',
 	fields => {
-		url_title => '',
+		# KBAKER 20250808: test debugging, added entries to test function due to this test failing without these entries
+		url_title => 'edit_post',
 	}},
 	'Submit form to save forum post'
 );

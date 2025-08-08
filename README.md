@@ -46,6 +46,10 @@ $ cpanm -v --installdeps --with-feature=postgres .
 $ ./bin/database/build-with-demo-data
 $ prove -lr t/
 
+[[[ NEED AUTOMATE THE FOLLOWING COMMANDS TO GO FROM MANUAL TO AUTOMATED TESTING ]]]
+$ bin/database/build
+$ prove -lv t/admin-controllers/controller_Admin-Blog.t
+
 
 Author
 ------

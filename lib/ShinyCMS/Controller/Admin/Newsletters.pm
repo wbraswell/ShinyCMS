@@ -1193,7 +1193,9 @@ sub get_paid_list : Chained( 'base' ) : PathPart( 'paid-list' ) : CaptureArgs( 1
 	}
 }
 
-sub subscribe : Chained( 'get_paid_list' ) : PathPart( 'subscribe' ) : Args( 0 ) {
+# KBAKER 20250808: general debugging, was previously named subscribe() and renamed to subscribe_paid() to eliminate duplication of
+# functions named subscribe()
+sub subscribe_paid : Chained( 'get_paid_list' ) : PathPart( 'subscribe' ) : Args( 0 ) {
 	my ( $self, $c ) = @_;
 
 	# Create (or fetch and update) recipient record in database

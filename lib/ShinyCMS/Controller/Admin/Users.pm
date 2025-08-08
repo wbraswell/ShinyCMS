@@ -911,6 +911,8 @@ sub post_login_redirect {
 	}
 	# If all else fails, pass them on to the non-admin post-login method
 	else {
+		# KBAKER 20250808: general debugging, added a warn to check if recursion occurs here
+		warn('in post_login_redirect(), about to call login()...');
 		$c->go( 'Users', 'login' );
 	}
 
