@@ -195,6 +195,10 @@ $t->submit_form_ok({
 	fields => {
 		name     => 'New Page From Test Suite',
 		template => $template1_id,
+		# KBAKER 20250819: test debugging, added fields for section and menu_position,
+		# they are required fields the migration from MySQL to postgres created
+		section => $section_id,
+		menu_position => 1,
 	}},
 	'Submitted form to create new CMS page'
 );

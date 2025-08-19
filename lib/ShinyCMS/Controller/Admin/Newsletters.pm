@@ -286,7 +286,10 @@ sub edit_newsletter_do : Chained( 'base' ) : PathPart( 'save' ) : Args( 0 ) {
 	}
 	else {
 		# Wipe 'to send' date in case of user explicitly clearing it
-		$details->{ sent } = undef;
+		# KBAKER 20250819: general debugging, changed the sent entry for $details from undef to \'current_timestamp'
+		# MySQL would automatically translate an undef value to the current_timestamp value
+		# postgres doesn't implicitly convert undef so current_timestamp must be inserted manually
+		$details->{ sent } = \'current_timestamp';
 	}
 
 	# TODO: If template has changed, change element stack
@@ -496,7 +499,10 @@ sub unqueue : Chained( 'base' ) : PathPart( 'unqueue' ) : Args( 1 ) {
 	# Set delivery status to 'Not sent'
 	$c->stash->{ newsletter }->update({
 		status => 'Not sent',
-		sent   => undef,
+		# KBAKER 20250819: general debugging, changed the sent entry from undef to \'current_timestamp'
+		# MySQL would automatically translate an undef value to the current_timestamp value
+		# postgres doesn't implicitly convert undef so current_timestamp must be inserted manually
+		sent => \'current_timestamp',
 	});
 
 	# Shove a confirmation message into the flash

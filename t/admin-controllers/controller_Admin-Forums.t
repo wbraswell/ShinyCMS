@@ -17,6 +17,8 @@ use Test::More;
 
 use lib 't/support';
 require 'login_helpers.pl';  ## no critic
+# KBAKER 20250819: test debugging, make database helper perl script required for testing
+require 'database_helper.pl';
 
 
 # Create and log in as a Forums Admin
@@ -109,6 +111,8 @@ $t->submit_form_ok({
 	fields => {
 		name => 'Test Forum',
 		section => $section_id,
+		# KBAKER 20250819: test debugging, added a display_order field, it is required due to the migration from MySQL to Postgres created
+		display_order => 2
 	}},
 	'Submitted form to create new forum'
 );
@@ -154,6 +158,8 @@ $t->title_is(
 
 # Edit forum post
 # TODO: This test requires the demo data to be loaded
+# KBAKER 20250819: test debugging, added helper function that inserts forum demo data needed to run remaining tests below
+insert_forum_data();
 $t->get_ok(
 	'/forums/hardware/laptops/1/general-chat',
 	'Go to forum post'
@@ -265,9 +271,12 @@ $t->title_unlike(
 	'Poll Admin cannot access admin area for forums'
 );
 
-
 # Tidy up user accounts
 remove_test_admin( $poll_admin );
 remove_test_admin( $admin      );
+
+# KBAKER 20250819: test debugging, deletes the database table and reinserts required data
+$c->model( 'DB::Forum' )->delete_all();
+insert_required_data();
 
 done_testing();
