@@ -24,6 +24,13 @@ sub insert_forum_data() {
         or die "Failed to run $target_script: $?";
 }
 
+# KBAKER 20250822: added feature, created delete_forums_data() to run the perl script delete-forums-demo-data
+sub delete_forums_data() {
+    my $target_script = File::Spec->catfile($repo_root, 'bin', 'database', 'data', 'delete-forums-demo-data');
+    system($^X, $target_script) == 0
+        or die "Failed to run $target_script: $?";
+}
+
 sub insert_required_data() {
     my $target_script = File::Spec->catfile($repo_root, 'bin', 'database', 'data', 'insert-required-data');
     

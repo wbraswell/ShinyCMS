@@ -1,0 +1,147 @@
+#!/usr/bin/env perl
+
+# ===================================================================
+# File:		bin/database/delete-forums-demo-data
+# Project:	ShinyCMS
+# Purpose:	Delete forum demo data via DBIC
+# 
+# Author:	Kai Baker <eigenspaces@gmail.com>
+# 
+# ShinyCMS is free software; you can redistribute it and/or modify it
+# under the terms of either the GPL 2.0 or the Artistic License 2.0
+# ===================================================================
+
+use strict;
+use warnings;
+
+# CPAN modules
+use DateTime::Duration;
+
+# Load local helper lib and get connected schema object
+use FindBin qw( $Bin );
+use lib "$Bin/../../lib";
+require 'helpers.pl';  ## no critic
+
+my $schema = get_schema();
+
+print "Starting database cleanup in reverse order...\n";
+
+# Delete tags first (they were added last)
+print "Removing tags and tagsets...\n";
+
+# Find and delete tags for forum_post3
+my $forum_post3 = $schema->resultset('ForumPost')->find({
+    url_title => 'future',
+});
+if ($forum_post3) {
+    my $tagset3 = $schema->resultset('Tagset')->find({
+        resource_id   => $forum_post3->id,
+        resource_type => 'ForumPost',
+    });
+    if ($tagset3) {
+        # Delete all tags associated with this tagset
+        $tagset3->tags->delete_all;
+        # Delete the tagset itself
+        $tagset3->delete;
+        print "  Deleted tagset and tags for forum_post3\n";
+    }
+}
+
+# Find and delete tags for forum_post1
+my $forum_post1 = $schema->resultset('ForumPost')->find({
+    url_title => 'laptop-contest',
+});
+if ($forum_post1) {
+    my $tagset1 = $schema->resultset('Tagset')->find({
+        resource_id   => $forum_post1->id,
+        resource_type => 'ForumPost',
+    });
+    if ($tagset1) {
+        # Delete all tags associated with this tagset
+        $tagset1->tags->delete_all;
+        # Delete the tagset itself
+        $tagset1->delete;
+        print "  Deleted tagset and tags for forum_post1\n";
+    }
+}
+
+# Delete comments in reverse order (c5, c4, c3, c2, c1)
+print "Removing comments...\n";
+if ($forum_post1) {
+    my $discussion1 = $schema->resultset('Discussion')->find({
+        resource_id   => $forum_post1->id,
+        resource_type => 'ForumPost',
+    });
+    
+    if ($discussion1) {
+        # Get all comments for this discussion, ordered by id descending
+        my @comments = $discussion1->comments->search(
+            {},
+            { order_by => { -desc => 'id' } }
+        )->all;
+        
+        # Delete comments in reverse order (highest ID first)
+        foreach my $comment (@comments) {
+            my $comment_id = $comment->id;
+            $comment->delete;
+            print "  Deleted comment with id: $comment_id\n";
+        }
+    }
+}
+
+# Delete the discussion
+print "Removing discussion...\n";
+if ($forum_post1) {
+    # First, remove the discussion reference from the forum post
+    $forum_post1->update({ discussion => undef });
+    
+    my $discussion1 = $schema->resultset('Discussion')->find({
+        resource_id   => $forum_post1->id,
+        resource_type => 'ForumPost',
+    });
+    if ($discussion1) {
+        $discussion1->delete;
+        print "  Deleted discussion for forum_post1\n";
+    }
+}
+
+# Delete forum posts in reverse order (post4, post3, post2, post1)
+print "Removing forum posts...\n";
+my @post_urls = ('beep-beep-beep', 'future', 'no-talking', 'laptop-contest');
+foreach my $url (@post_urls) {
+    my $post = $schema->resultset('ForumPost')->find({
+        url_title => $url,
+    });
+    if ($post) {
+        $post->delete;
+        print "  Deleted forum post: $url\n";
+    }
+}
+
+# Delete forums in reverse order (sw_forum1, hw_forum2, hw_forum1)
+print "Removing forums...\n";
+my @forum_urls = ('linux', 'desktops', 'laptops');
+foreach my $url (@forum_urls) {
+    my $forum = $schema->resultset('Forum')->find({
+        url_name => $url,
+    });
+    if ($forum) {
+        $forum->delete;
+        print "  Deleted forum: $url\n";
+    }
+}
+
+# Delete forum sections in reverse order (section2, section1)
+print "Removing forum sections...\n";
+my @section_urls = ('software', 'hardware');
+foreach my $url (@section_urls) {
+    my $section = $schema->resultset('ForumSection')->find({
+        url_name => $url,
+    });
+    if ($section) {
+        $section->delete;
+        print "  Deleted forum section: $url\n";
+    }
+}
+
+print "Database cleanup completed successfully!\n";

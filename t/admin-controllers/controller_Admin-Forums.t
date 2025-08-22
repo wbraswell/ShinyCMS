@@ -177,6 +177,8 @@ $t->submit_form_ok({
 	fields => {
 		# KBAKER 20250808: test debugging, added entries to test function due to this test failing without these entries
 		url_title => 'edit_post',
+		# KBAKER 20250822: test debugging, added required entry, display_order
+		display_order => 1
 	}},
 	'Submit form to save forum post'
 );
@@ -275,8 +277,7 @@ $t->title_unlike(
 remove_test_admin( $poll_admin );
 remove_test_admin( $admin      );
 
-# KBAKER 20250819: test debugging, deletes the database table and reinserts required data
-$c->model( 'DB::Forum' )->delete_all();
-insert_required_data();
+# KBAKER 20250922: test debugging, deletes forum demo data
+delete_forums_data();
 
 done_testing();

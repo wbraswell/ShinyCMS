@@ -112,8 +112,20 @@ sub save_forum_post : Chained( 'stash_post' ) : PathPart( 'save' ) : Args( 0 ) {
 	}
 
 	# Check for a collision in the menu_position settings for this section
+	# KBAKER 20250822: MySQL to PostgreSQL migration, $display_order is a required field that crashes ShinyCMS when left empty,
+	# added a check to ensure field is inserted and alert user when it's absent
+	my $display_order = $c->request->param( 'display_order' );
+	if( $display_order !~ /^\d+$/ ) {
+		$c->flash->{ error_msg } = 'Display Order must be a number';
+		my $url = $c->uri_for( '/admin/forums/post', $c->stash->{ forum_post }->id,'edit' );
+		$c->response->redirect( $url );
+		$c->detach();
+		return;
+	}
+
 	my $collision = $c->stash->{ forum_post }->forum->forum_posts->search({
-		display_order => $c->request->param( 'display_order' ),
+		# display_order => $c->request->param( 'display_order' ),
+		display_order => $display_order
 	})->count;
 
 	# Tidy up the URL title
