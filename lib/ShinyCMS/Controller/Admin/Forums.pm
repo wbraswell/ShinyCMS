@@ -307,6 +307,9 @@ Edit a forum.
 sub edit_forum : Chained( 'stash_forum' ) : PathPart( 'edit' ) : Args( 0 ) {
 	my ( $self, $c ) = @_;
 
+	# KBAKER 20250829: added test mode, to be used as needed on template files
+	$c->stash->{ testmode } = $c->request->param( 'testmode' );
+
 	my @sections = $c->model( 'DB::ForumSection' )->search(
 		{},
 		{ order_by => 'display_order' },

@@ -140,6 +140,15 @@ ok(
 	$forum_inputs2[0]->value eq 'updated-test-forum',
 	'Verified that forum was updated'
 );
+# KBAKER 20250829: test debugging, added test for removing forum after done testing it
+# Delete forum post after finished testing
+# $t->post_ok(
+# 	'/admin/forums/forum/'.$section_id.'/edit',
+# 	{
+# 		delete => 'Delete'
+# 	},
+# 	"Submitted request to delete forum post"
+# );
 $t->uri->path =~ m{/forums/forum/(\d+)/edit$};
 my $forum_id = $1;
 # Try to edit a non-existent forum
@@ -277,7 +286,9 @@ $t->title_unlike(
 remove_test_admin( $poll_admin );
 remove_test_admin( $admin      );
 
-# KBAKER 20250922: test debugging, deletes forum demo data
+# KBAKER 20250822: test debugging, deletes forum demo data
 delete_forums_data();
+# KBAKER 20250829: test debugging, verifies forums demo data was removed
+verify_forums_cleanup();
 
 done_testing();

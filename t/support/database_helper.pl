@@ -37,3 +37,10 @@ sub insert_required_data() {
     system($^X, $target_script) == 0
         or die "Failed to run $target_script: $?";
 }
+# KBAKER20250829: added feature, created verify_forums_cleanup to run Perl script that verifies forums demo data was removed
+sub verify_forums_cleanup() {
+    my $target_script = File::Spec->catfile($repo_root, 'bin', 'database', 'data', 'verify_forum_cleanup');
+    
+    system($^X, $target_script) == 0
+        or die "Failed to run $target_script: $?";
+}
