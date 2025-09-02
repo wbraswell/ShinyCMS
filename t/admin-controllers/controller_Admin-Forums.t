@@ -140,15 +140,6 @@ ok(
 	$forum_inputs2[0]->value eq 'updated-test-forum',
 	'Verified that forum was updated'
 );
-# KBAKER 20250829: test debugging, added test for removing forum after done testing it
-# Delete forum post after finished testing
-# $t->post_ok(
-# 	'/admin/forums/forum/'.$section_id.'/edit',
-# 	{
-# 		delete => 'Delete'
-# 	},
-# 	"Submitted request to delete forum post"
-# );
 $t->uri->path =~ m{/forums/forum/(\d+)/edit$};
 my $forum_id = $1;
 # Try to edit a non-existent forum
@@ -181,6 +172,21 @@ $t->title_is(
 	'Edit Forum Post - ShinyCMS',
 	'Reached edit page for top-level forum post'
 );
+# KBAKER 20250901: test debugging, find the action from the form id for edit_post in order to get the section id
+my $form = $t->form_with(id => 'edit_post');
+my $section_id_from_action;
+if ($form) {
+    my $action = $form->action;
+
+	if ($action =~ m{/post/(\d+)/}) {
+		$section_id_from_action = $1;
+		diag("Extracted ID: $section_id_from_action\n");
+	}
+    diag("Form action is: $action\n");
+} else {
+    diag("Form with id 'your_form_id' not found\n");
+}
+# this forum post is edited and so needs to be deleted
 $t->submit_form_ok({
 	form_id => 'edit_post',
 	fields => {
@@ -191,7 +197,6 @@ $t->submit_form_ok({
 	}},
 	'Submit form to save forum post'
 );
-
 
 # TODO: Delete forum post (can't use submit_form_ok due to javascript confirmation)
 
@@ -285,6 +290,14 @@ $t->title_unlike(
 # Tidy up user accounts
 remove_test_admin( $poll_admin );
 remove_test_admin( $admin      );
+# KBAKER 20250901: test debugging, using the section id saved to $section_id_from_action from the action above, use it to delete the forum post
+$t->post_ok(
+	'/admin/forums/post/' . $section_id_from_action . '/save',
+	{
+		delete => 'Delete'
+	},
+	"Submitted request to delete forum post with section $section_id"
+);
 
 # KBAKER 20250822: test debugging, deletes forum demo data
 delete_forums_data();
