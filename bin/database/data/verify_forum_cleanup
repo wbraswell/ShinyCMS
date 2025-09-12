@@ -149,16 +149,51 @@ my @discussions = $schema->resultset('Discussion')->search({
 
 my $orphaned_discussions = 0;
 foreach my $discussion (@discussions) {
-    my $post = $schema->resultset('ForumPost')->find($discussion->resource_id);
-    if (!$post) {
-        print "  ${YELLOW}⚠ WARNING:${RESET} Orphaned discussion found (ID: " . $discussion->id . ")\n";
+    # KBAKER 20250912: refactored code to display data found in database if any are remaining
+    my $post_exists = $schema->resultset('ForumPost')->count({
+        id => $discussion->resource_id
+    });
+    if ($post_exists == 0) {
+        print "  ${YELLOW}⚠ WARNING:${RESET} Orphaned discussion found\n";
+        print "    ${DIM}├─ Discussion ID: ${BOLD}" . $discussion->id . "${RESET}\n";
+        print "    ${DIM}├─ Resource ID: " . $discussion->resource_id . " (missing ForumPost)${RESET}\n";
         $orphaned_discussions++;
         
-        # Check for comments in orphaned discussion
-        my $comment_count = $discussion->comments->count;
+        # Show comments in orphaned discussion
+        my @comments = $discussion->comments->search({}, { order_by => 'id' })->all;
+        my $comment_count = scalar @comments;
+
         if ($comment_count > 0) {
-            print "    ${DIM}${YELLOW}└─ Contains $comment_count comment(s)${RESET}\n";
+            print "    ${DIM}├─ Contains ${YELLOW}$comment_count${RESET}${DIM} comment(s):${RESET}\n";
+
+            foreach my $comment (@comments) {
+                print "    ${DIM}│  ${CYAN}Comment ID " . $comment->id;
+                print " (parent: " . ($comment->parent || 'none') . ")${RESET}\n";
+
+                # Show comment title if present
+                if ($comment->title) {
+                    print "    ${DIM}│    Title: \"" . $comment->title . "\"${RESET}\n";
+                }
+
+                # Show first 100 chars of comment body
+                if ($comment->body) {
+                    my $body_preview = substr($comment->body, 0, 100);
+                    $body_preview =~ s/\n/ /g;  # Replace newlines with spaces
+                    $body_preview .= '...' if length($comment->body) > 100;
+                    print "    ${DIM}│    Body: \"${body_preview}\"${RESET}\n";
+                }
+
+                # Show author info
+                print "    ${DIM}│    Author: " . ($comment->author || 'unknown');
+                print " (" . ($comment->author_type || 'unknown type') . ")${RESET}\n";
+
+                print "    ${DIM}│${RESET}\n";
+            }
+        } else {
+            print "    ${DIM}└─ No comments attached${RESET}\n";
         }
+
+        print "\n";
     }
 }
 

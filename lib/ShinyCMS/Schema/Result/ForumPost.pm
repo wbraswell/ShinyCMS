@@ -214,6 +214,16 @@ __PACKAGE__->belongs_to(
   { is_deferrable => 1, on_delete => "RESTRICT", on_update => "RESTRICT" },
 );
 
+# KBAKER 20250912: TO-DO, Create method sub tagsets to find all tagsets associated with forum_post
+# ->search({resource_type=>'ForumPost', resource_id=>$self->id})->all
+# this is not a normal database relationship because of the involvement of the "resource_type" field,
+# and "resource_type" is how you decide which table "resource_id" is pointing to, thereofre this requires the creation of custom Perl
+# code because it can not be represented as a normal database relationship using "has-many" because it is not a normal relationship
+__PACKAGE__->has_many(
+  "tagsets" => 'ShinyCMS::Schema::Result::Tagset',
+  { 'foreign.resource_id' => 'self.id' }
+);
+
 
 # Created by DBIx::Class::Schema::Loader v0.07049 @ 2019-06-21 00:20:40
 # DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:fvmzCbkpZ9LWHN+3OR9dfg

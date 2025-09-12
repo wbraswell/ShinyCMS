@@ -34,11 +34,15 @@ my $forum_post3 = $schema->resultset('ForumPost')->find({
     url_title => 'future',
 });
 if ($forum_post3) {
+    # KBAKER 20250912: printing here to indicate the execution path
+    print "     Found forum_post3 for deleting tags\n";
     my $tagset3 = $schema->resultset('Tagset')->find({
         resource_id   => $forum_post3->id,
         resource_type => 'ForumPost',
     });
     if ($tagset3) {
+        # KBAKER 20250912: printing here to indicate the execution path
+        print "          Found tags and removing...\n";
         # Delete all tags associated with this tagset
         $tagset3->tags->delete_all;
         # Delete the tagset itself
@@ -46,68 +50,80 @@ if ($forum_post3) {
         print "  Deleted tagset and tags for forum_post3\n";
     }
 }
-
+# KBAKER 20250912: Will eventually eliminate need for this entirely, keeping now for reference
 # Find and delete tags for forum_post1
-my $forum_post1 = $schema->resultset('ForumPost')->find({
-    url_title => 'laptop-contest',
-});
-if ($forum_post1) {
-    my $tagset1 = $schema->resultset('Tagset')->find({
-        resource_id   => $forum_post1->id,
-        resource_type => 'ForumPost',
-    });
-    if ($tagset1) {
-        # Delete all tags associated with this tagset
-        $tagset1->tags->delete_all;
-        # Delete the tagset itself
-        $tagset1->delete;
-        print "  Deleted tagset and tags for forum_post1\n";
-    }
-}
+# my $forum_post1 = $schema->resultset('ForumPost')->find({
+#     # url_title => 'laptop-contest',
+#     id => 1,
+# });
+# print "Dumping forum_post1 data: ";
+# Dumper($forum_post1);
+# print "\n";
+# if ($forum_post1) {
+#     print "     Found forum_post1 for deleting tags\n"; # ✗
+#     my $tagset1 = $schema->resultset('Tagset')->find({
+#         resource_id   => $forum_post1->id,
+#         resource_type => 'ForumPost',
+#     });
+#     if ($tagset1) {
+#         print "          Found tagset1\n"; # ✗
+#         # Delete all tags associated with this tagset
+#         $tagset1->tags->delete_all;
+#         # Delete the tagset itself
+#         $tagset1->delete;
+#         print "  Deleted tagset and tags for forum_post1\n";
+#     }
+# }
 
-# Delete comments in reverse order (c5, c4, c3, c2, c1)
-print "Removing comments...\n";
-if ($forum_post1) {
-    my $discussion1 = $schema->resultset('Discussion')->find({
-        resource_id   => $forum_post1->id,
-        resource_type => 'ForumPost',
-    });
+# # Delete comments in reverse order (c5, c4, c3, c2, c1)
+# print "Removing comments...\n";
+# if ($forum_post1) {
+#     my $discussion1 = $schema->resultset('Discussion')->find({
+#         resource_id   => $forum_post1->id,
+#         resource_type => 'ForumPost',
+#     });
+#     print "     Found forum_post1 for removing comments\n"; # ✗
     
-    if ($discussion1) {
-        # Get all comments for this discussion, ordered by id descending
-        my @comments = $discussion1->comments->search(
-            {},
-            { order_by => { -desc => 'id' } }
-        )->all;
+#     if ($discussion1) {
+#         print "          Found discussions and removing...."; # ✗
+#         # Get all comments for this discussion, ordered by id descending
+#         my @comments = $discussion1->comments->search(
+#             {},
+#             { order_by => { -desc => 'id' } }
+#         )->all;
         
-        # Delete comments in reverse order (highest ID first)
-        foreach my $comment (@comments) {
-            my $comment_id = $comment->id;
-            $comment->delete;
-            print "  Deleted comment with id: $comment_id\n";
-        }
-    }
-}
+#         # Delete comments in reverse order (highest ID first)
+#         foreach my $comment (@comments) {
+#             print "Showing comment body before deleting\n";
+#             print ${comment->body} . "\n";
+#             my $comment_id = $comment->id;
+#             $comment->delete;
+#             print "  Deleted comment with id: $comment_id\n";
+#         }
+#     }
+# }
 
-# Delete the discussion
-print "Removing discussion...\n";
-if ($forum_post1) {
-    # First, remove the discussion reference from the forum post
-    $forum_post1->update({ discussion => undef });
+# # Delete the discussion
+# print "Removing discussion...\n";
+# if ($forum_post1) {
+#     print "Found forum_post1 for deleting discussion \n";
+#     # First, remove the discussion reference from the forum post
+#     $forum_post1->update({ discussion => undef });
     
-    my $discussion1 = $schema->resultset('Discussion')->find({
-        resource_id   => $forum_post1->id,
-        resource_type => 'ForumPost',
-    });
-    if ($discussion1) {
-        $discussion1->delete;
-        print "  Deleted discussion for forum_post1\n";
-    }
-}
+#     my $discussion1 = $schema->resultset('Discussion')->find({
+#         resource_id   => $forum_post1->id,
+#         resource_type => 'ForumPost',
+#     });
+#     if ($discussion1) {
+#         $discussion1->delete;
+#         print "  Deleted discussion for forum_post1\n";
+#     }
+# }
 
 # Delete forum posts in reverse order (post4, post3, post2, post1)
 print "Removing forum posts...\n";
-my @post_urls = ('beep-beep-beep', 'future', 'no-talking', 'laptop-contest');
+# KBAKER 20250912: general debugging, added 'edit_post' temporarily while debugging code
+my @post_urls = ('beep-beep-beep', 'future', 'no-talking', 'laptop-contest', 'edit_post');
 foreach my $url (@post_urls) {
     my $post = $schema->resultset('ForumPost')->find({
         url_title => $url,

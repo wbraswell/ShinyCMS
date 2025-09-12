@@ -183,6 +183,27 @@ sub post_count {
 	return $self->forum_posts->count;
 }
 
+# KBAKER 20250912: new feature, to purge all relationships to a forum_post and the forum_post itself
+sub purge {
+  my($self) = @_;
+
+  foreach my $forum_post ($self->forum_posts->all) {
+    my $discussion =  $forum_post->discussion;
+    foreach my $comment ($discussion->comments->all) {
+      $comment->delete;
+    }
+    foreach my $tagset ($forum_post->tagsets->all) {
+      foreach my $tag ($tagset->tags->all) {
+        print "Attempting to delete tag $tag";
+        $tag->delete;
+      }
+      $tagset->delete;
+    }
+    $discussion->delete;
+    $forum_post->delete;
+  }
+  $self->delete;
+}
 
 =head2 comment_count
 
