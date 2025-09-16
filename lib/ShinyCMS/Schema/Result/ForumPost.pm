@@ -214,11 +214,43 @@ __PACKAGE__->belongs_to(
   { is_deferrable => 1, on_delete => "RESTRICT", on_update => "RESTRICT" },
 );
 
-# KBAKER 20250912: TO-DO, Create method sub tagsets to find all tagsets associated with forum_post
-# ->search({resource_type=>'ForumPost', resource_id=>$self->id})->all
-# this is not a normal database relationship because of the involvement of the "resource_type" field,
-# and "resource_type" is how you decide which table "resource_id" is pointing to, thereofre this requires the creation of custom Perl
-# code because it can not be represented as a normal database relationship using "has-many" because it is not a normal relationship
+# purge_tags() and purge() are for test suite use only;
+# do not use them in scenarios with many child field values in the database, as this will issue many inefficient database delete calls;
+# to delete many child field values, create and use a recursive SQL call
+
+# KBAKER 20250912: created purge_tags() subroutine to find all tagsets associated with database field "resource_type"
+# when it has the value of "ForumPost"; this is not a normal database relationship because of the involvement of the "resource_type" field,
+# and "resource_type" is how you decide toward which table "resource_id" is pointing, therefore this abnormal relationship requires the creation of
+# this custom Perl code because it can not be represented as a normal database relationship using "has-many" like a normal database relationship would
+sub purge_tags {
+  my($self) = @_;
+
+  my $tagset_rs = $self->result_source->schema->resultset('Tagset')->
+    search({resource_type=>'ForumPost', resource_id=>$self->id});
+  foreach my $tagset ($tagset_rs->all) {
+    print "Deleting tag $tagset";
+    $tagset->tags->delete_all;
+    $tagset->delete;
+  }
+}
+
+# KBAKER 20250916: created purge() subroutine for removing discussion, comment, and tags; this is for test suite use only
+sub purge {
+  my($self) = @_;
+
+  $self->purge_tags();
+  $self->delete;
+  
+  my $discussion =  $self->discussion;
+  if($discussion) {
+    foreach my $comment ($discussion->comments->all) {
+      $comment->purge;
+    }
+    $discussion->delete;
+  }
+
+}
+
 __PACKAGE__->has_many(
   "tagsets" => 'ShinyCMS::Schema::Result::Tagset',
   { 'foreign.resource_id' => 'self.id' }

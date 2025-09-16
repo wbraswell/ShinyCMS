@@ -261,6 +261,13 @@ __PACKAGE__->belongs_to(
   },
 );
 
+# KBAKER 20250916: created a relation for comments which relates a parent comment to its child comment
+__PACKAGE__->has_many(
+  "children",
+  "ShinyCMS::Schema::Result::Comment",
+  { 'foreign.parent' => "self.uid" }
+);
+
 
 # Created by DBIx::Class::Schema::Loader v0.07049 @ 2020-01-26 21:06:52
 # DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Wog207geJGYRKXrt0URsTQ
@@ -340,6 +347,15 @@ sub mark_as_not_spam {
     return $prev;
 }
 
+# KBAKER 20250916: created purge() subroutine to recursively remove all child comments
+sub purge {
+  my($self) = @_;
+
+  foreach my $child ($self->children->all) {
+    $child->purge;
+  }
+  $self->delete;
+}
 
 # EOF
 __PACKAGE__->meta->make_immutable;
