@@ -17,11 +17,12 @@ use Test::More;
 
 use lib 't/support';
 require 'login_helpers.pl';  ## no critic
-
+# KBAKER 20250919: insert fileserver demo data to run tests
+require 'database_helper.pl';
+insert_fileserver_data();
 
 # Create and log in as a Fileserver Admin
 my $admin = create_test_admin( 'test_admin_fileserver', 'Fileserver Admin' );
-
 my $t = login_test_admin( $admin->username, $admin->username )
 	or die 'Failed to log in as Fileserver Admin';
 # Check login was successful

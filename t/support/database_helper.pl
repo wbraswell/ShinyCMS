@@ -15,6 +15,13 @@ use FindBin;
 use File::Spec;
 use Cwd 'abs_path';
 
+# KBAKER 20250919: copied the next five lines below from file 'bin/database/data/insert-fileserver-demo-data';
+# Load local helper lib and get connected schema object
+use FindBin qw( $Bin );
+use lib "$Bin/../../lib";
+require 'helpers.pl';  ## no critic
+my $schema = get_schema();
+
 my $repo_root = abs_path(File::Spec->catdir($FindBin::Bin, '..', '..'));
 
 sub insert_forum_data() {
@@ -37,10 +44,18 @@ sub insert_required_data() {
     system($^X, $target_script) == 0
         or die "Failed to run $target_script: $?";
 }
-# KBAKER20250829: added feature, created verify_forums_cleanup to run Perl script that verifies forums demo data was removed
+# KBAKER20250829: created verify_forums_cleanup() to run Perl script that verifies forums demo data was removed
 sub verify_forums_cleanup() {
     my $target_script = File::Spec->catfile($repo_root, 'bin', 'database', 'data', 'verify_forum_cleanup');
     
+    system($^X, $target_script) == 0
+        or die "Failed to run $target_script: $?";
+}
+
+# KBAKER 20250919: created insert_fileserver_data() to run Perl script that inserts FileServer demo data
+sub insert_fileserver_data() {
+    my $target_script = File::Spec->catfile($repo_root, 'bin', 'database', 'data', 'insert-fileserver-demo-data');
+
     system($^X, $target_script) == 0
         or die "Failed to run $target_script: $?";
 }
