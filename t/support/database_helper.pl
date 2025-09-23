@@ -59,3 +59,19 @@ sub insert_fileserver_data() {
     system($^X, $target_script) == 0
         or die "Failed to run $target_script: $?";
 }
+
+# KBAKER 20250923: created delete_fileserver_data() to run Perl script that deletes FileServer demo data
+sub delete_fileserver_data() {
+    my $target_script = File::Spec->catfile($repo_root, 'bin', 'database', 'data', 'delete-fileserver-demo-data');
+
+    system($^X, $target_script) == 0
+        or die "Failed to run $target_script: $?";
+}
+
+# KBAKER 20250923: created verify_fileserver_cleanup() to run Perl script that verifies deletion of FileServer demo data
+sub verify_fileserver_cleanup() {
+    my $target_script = File::Spec->catfile($repo_root, 'bin', 'database', 'data', 'verify-fileserver-cleanup');
+
+    system($^X, $target_script) == 0
+        or die "Failed to run $target_script: $?";
+}

@@ -123,4 +123,8 @@ $t->title_unlike(
 remove_test_admin( $poll_admin );
 remove_test_admin( $admin      );
 
+# KBAKER 20250923: below two subroutines cleanup demo data from database
+delete_fileserver_data();
+verify_fileserver_cleanup();
+
 done_testing();

@@ -1,0 +1,161 @@
+#!/usr/bin/env perl
+
+# ===================================================================
+# File:		bin/database/delete-fileserver-demo-data
+# Purpose:	Delete fileserver demo data via DBIC (in reverse order)
+# 
+# Author:	Kai Baker <eigenspaces@gmail.com>
+#
+# This script removes all fileserver demo data in the reverse order
+# it was created to properly handle foreign key dependencies.
+# ===================================================================
+
+use strict;
+use warnings;
+
+# Load local helper lib and get connected schema object
+use FindBin qw( $Bin );
+use lib "$Bin/../../lib";
+require 'helpers.pl';  ## no critic
+
+my $schema = get_schema();
+
+print "Starting fileserver demo data cleanup in reverse order...\n\n";
+
+# Step 1: Delete file access log entries (last items created)
+print "Removing file access log entries...\n";
+
+# Find the viewer user
+my $viewer_user = $schema->resultset('User')->find({
+    username => 'viewer',
+});
+
+if ($viewer_user) {
+    # Delete file access entries for this user
+    my $access_count = $viewer_user->file_accesses->count;
+    if ($access_count > 0) {
+        $viewer_user->file_accesses->delete_all;
+        print "  Deleted $access_count file access log entries for user 'viewer'\n";
+    } else {
+        print "  No file access entries found for user 'viewer'\n";
+    }
+}
+
+# Also check first user for any file accesses
+my $first_user = $schema->resultset('User')->find({
+    username => 'first',
+});
+
+if ($first_user) {
+    my $access_count = $first_user->file_accesses->count;
+    if ($access_count > 0) {
+        $first_user->file_accesses->delete_all;
+        print "  Deleted $access_count file access log entries for user 'first'\n";
+    }
+}
+
+print "\n";
+
+# Step 2: Delete user access permissions
+print "Removing user access permissions...\n";
+# use Devel::Dwarn;
+# Dwarn($viewer_user);
+print "viewer_user: $viewer_user\n";
+
+if (defined $viewer_user) {
+    # Get all access permissions for viewer user
+    print 'Deleting $viewer_user->user_accesses\n';
+    $viewer_user->user_accesses->delete_all;
+}
+
+if ($first_user) {
+    # Get all access permissions for first user
+    print 'Deleting $first_user->user_accesses\n';
+    $first_user->user_accesses->delete_all;
+}
+
+print "\n";
+
+# Step 3: Delete the demo users
+print "Removing demo users...\n";
+
+if ($viewer_user) {
+    # Check if user has any other data that might prevent deletion
+    # (posts, comments, etc. - add checks as needed based on your schema)
+    
+    $viewer_user->delete;
+    print "  Deleted user 'viewer'\n";
+} else {
+    print "  User 'viewer' not found\n";
+}
+
+if ($first_user) {
+    $first_user->delete;
+    print "  Deleted user 'first'\n";
+} else {
+    print "  User 'first' not found\n";
+}
+
+print "\n";
+
+# Step 4: Delete access groups (first items created)
+print "Removing access groups...\n";
+
+my @access_groups = (
+    'Exclusive',  # Reverse order: last created first
+    'Unexpired',
+    'Expired',
+    'Eternal',
+);
+
+foreach my $access_name (@access_groups) {
+    my $access = $schema->resultset('Access')->find({
+        access => $access_name,
+    });
+    
+    if ($access) {
+        # Check if any users still have this access level
+        my $users_with_access = $schema->resultset('UserAccess')->search({
+            access => $access->id
+        })->count;
+        
+        if ($users_with_access > 0) {
+            print "  WARNING: Cannot delete access group '$access_name' - ";
+            print "still referenced by $users_with_access user(s)\n";
+        } else {
+            $access->delete;
+            print "  Deleted access group '$access_name'\n";
+        }
+    } else {
+        print "  Access group '$access_name' not found\n";
+    }
+}
+
+print "\n";
+print "Fileserver demo data cleanup completed!\n";
+print "\n";
+
+# Optional: Verify cleanup
+print "Verification:\n";
+print "-" x 40 . "\n";
+
+# Check for remaining demo users
+my $remaining_users = $schema->resultset('User')->search({
+    username => { -in => ['viewer', 'first'] }
+})->count;
+print "Remaining demo users: $remaining_users\n";
+
+# Check for remaining access groups
+my $remaining_access = $schema->resultset('Access')->search({
+    access => { -in => \@access_groups }
+})->count;
+print "Remaining demo access groups: $remaining_access\n";
+
+# Summary
+if ($remaining_users == 0 && $remaining_access == 0) {
+    print "\n✓ SUCCESS: All fileserver demo data has been removed.\n";
+    exit 0;
+} else {
+    print "\n✗ WARNING: Some demo data remains in the database.\n";
+    exit 1;
+}
