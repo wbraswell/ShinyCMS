@@ -21,15 +21,16 @@ require 'login_helpers.pl';  ## no critic
 require 'database_helper.pl';
 insert_fileserver_data();
 
-# Create and log in as a Fileserver Admin
-my $admin = create_test_admin( 'test_admin_fileserver', 'Fileserver Admin' );
+# Create and log in as a FileServer Admin
+# KBAKER 20250926: changed capitalization from 'Fileserver Admin' to 'FileServer Admin'
+my $admin = create_test_admin( 'test_admin_fileserver', 'FileServer Admin' );
 my $t = login_test_admin( $admin->username, $admin->username )
-	or die 'Failed to log in as Fileserver Admin';
+	or die 'Failed to log in as FileServer Admin';
 # Check login was successful
 my $c = $t->ctx;
 ok(
-	$c->user->has_role( 'Fileserver Admin' ),
-	'Logged in as Fileserver Admin'
+	$c->user->has_role( 'FileServer Admin' ),
+	'Logged in as FileServer Admin'
 );
 # Check we get sent to correct admin area by default
 $t->title_is(
@@ -40,7 +41,8 @@ $t->title_is(
 
 # Get a list of all files which have access log data
 $t->follow_link_ok(
-	{ text => 'Fileserver logs' },
+	# KBAKER 20250926: changed capitalization from 'Fileserver logs' to 'FileServer logs'
+	{ text => 'FileServer logs' },
 	'Follow link to view access logs for all files'
 );
 $t->title_is(

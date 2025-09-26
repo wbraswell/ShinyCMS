@@ -160,8 +160,10 @@ $t->title_is(
 # TODO: This test requires the demo data to be loaded
 # KBAKER 20250819: test debugging, added helper function that inserts forum demo data needed to run remaining tests below
 insert_forum_data();
+# KBAKER 20250926: obtaining forum id so forum path is accessed dynamically
+ok my $id = $c->model( 'DB::Forum' )->find( { url_name => 'laptops' } )->id;
 $t->get_ok(
-	'/forums/hardware/laptops/1/general-chat',
+	'/forums/hardware/laptops/' . $id . '/general-chat',
 	'Go to forum post'
 );
 $t->follow_link_ok(

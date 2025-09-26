@@ -90,7 +90,7 @@ are at the top.
 		- Moved admin controller minimum authorisation checks into base methods
 			- This means e.g. Page Admins must _also_ have Page Editor role now
 		- Added two new roles:
-			- Fileserver Admin
+			- FileServer Admin
 			- Shared Content Admin
 		- Added top-level page_size setting for admin area to
 		  config/shinycms.conf
@@ -106,7 +106,7 @@ are at the top.
 		- Doubled test coverage - from just under 30%, to almost 60%
 		- Changed the scripts that insert the demo site data so that they can
 		  be re-run without duplicating (or triplicating, etc) the demo data
-		- Added more demo data for News section and for Fileserver features
+		- Added more demo data for News section and for FileServer features
 		- Various utility scripts for running tests
 		- Added test database config, invoked with SHINYCMS_TEST=1 env var
 		- Added CircleCI, Travis CI, and Codecov badges to README

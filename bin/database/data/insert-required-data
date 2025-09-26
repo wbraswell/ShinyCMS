@@ -42,7 +42,8 @@ $schema->resultset( 'Role' )->find_or_create({ role => 'Events Admin'           
 $schema->resultset( 'Role' )->find_or_create({ role => 'Shop Admin'                });
 $schema->resultset( 'Role' )->find_or_create({ role => 'Newsletter Admin'          });
 $schema->resultset( 'Role' )->find_or_create({ role => 'Newsletter Template Admin' });
-$schema->resultset( 'Role' )->find_or_create({ role => 'Fileserver Admin'          });
+# KBAKER 20250926: changed capitalization from 'Fileserver Admin' to 'FileServer Admin'
+$schema->resultset( 'Role' )->find_or_create({ role => 'FileServer Admin'          });
 $schema->resultset( 'Role' )->find_or_create({ role => 'User Admin'                });
 
 

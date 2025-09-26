@@ -91,7 +91,7 @@ install-demodb: ## Install Demo data
 	@echo "Inserted demo data for: Forums"
 
 	@$(PERL) -I lib bin/database/data/insert-fileserver-demo-data
-	@echo "Inserted demo data for: Fileserver"
+	@echo "Inserted demo data for: FileServer"
 
 	@$(PERL) -I lib bin/database/data/insert-events-demo-data
 	@echo "Inserted demo data for: Events"

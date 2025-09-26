@@ -288,7 +288,7 @@ if ($items_found == 0 && $orphaned_user_accesses == 0 && $orphaned_file_logs == 
     print "${GREEN}${BOLD}✓ SUCCESS: All fileserver demo data has been successfully removed!${RESET}\n";
     print "${GREEN}The database is clean.${RESET}\n";
 } elsif ($items_found > 0) {
-    print "${RED}${BOLD}✗ FAILURE: Fileserver demo data still exists in the database!${RESET}\n";
+    print "${RED}${BOLD}✗ FAILURE: FileServer demo data still exists in the database!${RESET}\n";
     print "${RED}Please run the cleanup script to remove remaining items.${RESET}\n";
 } else {
     print "${YELLOW}${BOLD}⚠ WARNING: Main data removed but orphaned items remain!${RESET}\n";

@@ -1,7 +1,8 @@
 			[%- IF c.user.has_role( 'Shared Content Editor' )
 				OR c.user.has_role( 'Discussion Admin'      )
 				OR c.user.has_role( 'File Admin'            )
-				OR c.user.has_role( 'Fileserver Admin'      ) -%]
+				<!-- KBAKER 20250926: changed capitalization from 'Fileserver Admin' to 'FileServer Admin' -->
+				OR c.user.has_role( 'FileServer Admin'      ) -%]
 			<li id="Other" class="nav-title">Other</li>
 
 			[% IF c.user.has_role( 'Shared Content Editor' )
@@ -27,10 +28,11 @@
 				<i class="nav-icon fa fa-upload"></i> Upload file</a>
 			</li>
 			[% END -%]
-			[%- IF c.user.has_role( 'Fileserver Admin' ) %]
+			<!-- KBAKER 20250926: changed capitalization from 'Fileserver Admin' to 'FileServer Admin' -->
+			[%- IF c.user.has_role( 'FileServer Admin' ) %]
 			<li class="nav-item">
 			  <a class="nav-link" href="[% c.uri_for( '/admin/fileserver' ) %]" title="Restricted file access logs">
-				<i class="nav-icon fa fa-files-o"></i> Fileserver logs</a>
+				<i class="nav-icon fa fa-files-o"></i> FileServer logs</a>
 			</li>
 			[%- END -%]
 			[%- END %]

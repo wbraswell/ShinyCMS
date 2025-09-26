@@ -114,7 +114,10 @@ EOT
 $next_id++;
 my $c2 = $discussion1->comments->find_or_create({
 	id          => $next_id,
-	parent      => $c1->id,
+	# KBAKER 20250926: changed parent id from $c1->id to $c1->uid;
+	# because of this foreign key constraint:
+	# "comment_fk_parent" FOREIGN KEY (parent) REFERENCES comment(uid) ON UPDATE RESTRICT ON DELETE RESTRICT DEFERRABLE
+	parent      => $c1->uid,
 	author      => 1, # default admin user
 	author_type => 'Site User',
 	body        => $comment2,
@@ -135,7 +138,10 @@ EOT
 $next_id++;
 my $c4 = $discussion1->comments->find_or_create({
 	id          => $next_id,
-	parent      => $c2->id,
+	# KBAKER 20250926: changed parent id from $c2->id to $c2->uid;
+	# because of this foreign key constraint:
+	# "comment_fk_parent" FOREIGN KEY (parent) REFERENCES comment(uid) ON UPDATE RESTRICT ON DELETE RESTRICT DEFERRABLE
+	parent      => $c2->uid,
 	author      => 1, # default admin user
 	author_type => 'Site User',
 	body        => $comment4,
@@ -147,7 +153,10 @@ EOT
 $next_id++;
 my $c5 = $discussion1->comments->find_or_create({
 	id          => $next_id,
-	parent      => $c3->id,
+	# KBAKER 20250926: changed parent id from $c3->id to $c3->uid;
+	# because of this foreign key constraint:
+	# "comment_fk_parent" FOREIGN KEY (parent) REFERENCES comment(uid) ON UPDATE RESTRICT ON DELETE RESTRICT DEFERRABLE
+	parent      => $c3->uid,
 	author      => 1, # default admin user
 	author_type => 'Site User',
 	body        => $comment5,

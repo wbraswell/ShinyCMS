@@ -906,7 +906,8 @@ sub post_login_redirect {
 	# KBAKER 20250919: added the admin role 'Fileserver Admin' for login, with lowercase 'server';
 	# was previous only 'FileServer Admin', with capitalized 'Server'
 	# NEED FIX: which spelling is correct, Fileserver or FileServer?
-	elsif ( $c->user->has_role( 'Fileserver Admin'   ) ) {
+	# KBAKER 20250926: changed capitalization from 'Fileserver Admin' to 'FileServer Admin'
+	elsif ( $c->user->has_role( 'FileServer Admin'   ) ) {
 		$url = $c->uri_for(     '/admin/fileserver'  );
 	}
 	elsif ( $c->user->has_role( 'Shared Content Editor' ) ) {

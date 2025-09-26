@@ -39,7 +39,8 @@ sub base : Chained( '/base' ) : PathPart( 'admin/fileserver' ) : CaptureArgs( 0 
 	# Check to make sure user has the required permissions
 	return 0 unless $self->user_exists_and_can( $c, {
 		action   => 'view file access logs',
-		role     => 'Fileserver Admin',
+		# KBAKER 20250926: changed capitalization from 'Fileserver Admin' to 'FileServer Admin'
+		role     => 'FileServer Admin',
 		redirect => '/admin'
 	});
 

@@ -132,7 +132,7 @@ foreach my $access_name (@access_groups) {
 }
 
 print "\n";
-print "Fileserver demo data cleanup completed!\n";
+print "FileServer demo data cleanup completed!\n";
 print "\n";
 
 # Optional: Verify cleanup
