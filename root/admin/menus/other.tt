@@ -1,7 +1,7 @@
 			[%- IF c.user.has_role( 'Shared Content Editor' )
 				OR c.user.has_role( 'Discussion Admin'      )
 				OR c.user.has_role( 'File Admin'            )
-				<!-- KBAKER 20250926: changed capitalization from 'Fileserver Admin' to 'FileServer Admin' -->
+				# KBAKER 20250926: changed capitalization from 'Fileserver Admin' to 'FileServer Admin'
 				OR c.user.has_role( 'FileServer Admin'      ) -%]
 			<li id="Other" class="nav-title">Other</li>
 

@@ -16,7 +16,14 @@ use warnings;
 use Test::More;
 use Test::WWW::Mechanize::Catalyst::WithContext;
 
+# KBAKER 20251014: importation of 'database_helper.pl' for inserting, deleting and verifying deletion of database blog data
+use lib 't/support';
+require 'database_helper.pl';
+
 my $t = Test::WWW::Mechanize::Catalyst::WithContext->new( catalyst_app => 'ShinyCMS' );
+
+# KBAKER 20251014: call newly-created subroutine for inserting blog demo data
+insert_blog_data();
 
 # Go to the blog
 $t->get_ok(
@@ -213,5 +220,9 @@ ok(
 	$returns_undef && $no_results,
 	"search() without param('search') set returns undef & stashes no results"
 );
+
+# KBAKER 20251014: call newly-created subroutines for deleting and verifying deletion of database blog demo data
+delete_blog_demo_data();
+verify_blog_cleanup();
 
 done_testing();

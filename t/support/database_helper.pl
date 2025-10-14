@@ -75,3 +75,27 @@ sub verify_fileserver_cleanup() {
     system($^X, $target_script) == 0
         or die "Failed to run $target_script: $?";
 }
+
+# KBAKER 20251007: created insert_blog_data() to run Perl script that inserts blog demo data
+sub insert_blog_data() {
+    my $target_script = File::Spec->catfile($repo_root, 'bin', 'database', 'data', 'insert-blog-demo-data');
+
+    system($^X, $target_script) == 0
+        or die "Failed to run $target_script: $?";
+}
+
+# KBAKER 20250923: created delete_blog_demo_data() to run Perl script that deletes blog demo data
+sub delete_blog_demo_data() {
+    my $target_script = File::Spec->catfile($repo_root, 'bin', 'database', 'data', 'delete-blog-demo-data');
+
+    system($^X, $target_script) == 0
+        or die "Failed to run $target_script: $?";
+}
+
+# KBAKER 2021010: created verify_blog_cleanup() to run Perl script that verifies deletion of blog demo data
+sub verify_blog_cleanup() {
+    my $target_script = File::Spec->catfile($repo_root, 'bin', 'database', 'data', 'verify-blog-cleanup');
+
+    system($^X, $target_script) == 0
+        or die "Failed to run $target_script: $?";
+}

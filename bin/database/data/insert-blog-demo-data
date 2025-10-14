@@ -141,7 +141,8 @@ EOT
 $next_id++;
 my $c2 = $discussion1->comments->find_or_create({
 	id          => $next_id,
-	parent      => $c1->id,
+	# KBAKER 20251014: fixed parent id from $c1->id to $c1->uid
+	parent      => $c1->uid,
 	author      => $user->id,
 	author_type => 'Site User',
 	body        => $comment2,
@@ -164,7 +165,8 @@ EOT
 $next_id++;
 my $c4 = $discussion1->comments->find_or_create({
 	id          => $next_id,
-	parent      => $c2->id,
+	# KBAKER 20251014: fixed parent id from $c2->id to $c2->uid
+	parent      => $c2->uid,
 	author      => $user->id,
 	author_type => 'Site User',
 	body        => $comment4,
@@ -178,7 +180,8 @@ EOT
 $next_id++;
 my $c5 = $discussion1->comments->find_or_create({
 	id          => $next_id,
-	parent      => $c3->id,
+	# KBAKER 20251014: fixed parent id from $c3->id to $c3->uid
+	parent      => $c3->uid,
 	author      => $user->id,
 	author_type => 'Site User',
 	body        => $comment5,

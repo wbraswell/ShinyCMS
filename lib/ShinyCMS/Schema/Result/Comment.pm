@@ -234,6 +234,10 @@ Related object: L<ShinyCMS::Schema::Result::Discussion>
 
 =cut
 
+# KBAKER 20251014: "discussion" is a foreign key describing its relationship to the "Comment" table,
+# "discussion_id" would be a better description for the "discussion" key
+# because it acts more as an id due to the fact that the column holding the foreign key is an integer,
+# and thus "discussion" is not adequately descriptive
 __PACKAGE__->belongs_to(
   "discussion",
   "ShinyCMS::Schema::Result::Discussion",

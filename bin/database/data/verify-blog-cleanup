@@ -1,0 +1,333 @@
+#!/usr/bin/env perl
+
+# ===================================================================
+# File:		bin/database/verify-blog-cleanup
+# Purpose:	Verify that all blog demo data has been removed
+#
+# Author:	Kai Baker <eigenspaces@gmail.com>
+# 
+# This script checks that all blog-related demo data has been
+# successfully deleted from the database, with color-coded output.
+# ===================================================================
+
+use strict;
+use warnings;
+
+# CPAN modules
+use Term::ANSIColor qw(:constants);
+
+# Load local helper lib and get connected schema object
+use FindBin qw( $Bin );
+use lib "$Bin/../../lib";
+require 'helpers.pl';  ## no critic
+
+my $schema = get_schema();
+
+# Initialize counters
+my $items_found = 0;
+my $items_removed = 0;
+my $total_checks = 0;
+
+# ANSI color codes
+my $RESET = RESET;
+my $GREEN = GREEN;
+my $RED = RED;
+my $YELLOW = YELLOW;
+my $CYAN = CYAN;
+my $BOLD = BOLD;
+my $DIM = FAINT;
+my $MAGENTA = MAGENTA;
+my $BLUE = BLUE;
+
+print "${BOLD}${CYAN}=" x 70 . "${RESET}\n";
+print "${BOLD}${CYAN}BLOG DATA CLEANUP VERIFICATION${RESET}\n";
+print "${CYAN}=" x 70 . "${RESET}\n\n";
+print "Checking that all blog demo data has been removed from the database...\n\n";
+
+# Check Blog Posts
+print "${BOLD}${YELLOW}Blog Posts:${RESET}\n";
+print "${DIM}" . "-" x 50 . "${RESET}\n";
+
+my @post_checks = (
+    { num => 1,  url_title => 'w1n5t0n',                         title => 'w1n5t0n' },
+    { num => 2,  url_title => 'false-positives',                 title => 'False Positives' },
+    { num => 3,  url_title => 'then-the-world-changed-forever',  title => 'Then the world changed forever' },
+    { num => 4,  url_title => 'the-madding-crowd',               title => 'The madding crowd' },
+    { num => 5,  url_title => 'kidnapped',                       title => 'Kidnapped' },
+    { num => 6,  url_title => 'liberty-vs-security',             title => 'Liberty vs. Security' },
+    { num => 7,  url_title => 'nothing-to-hide-nothing-to-fear', title => 'Nothing to hide, nothing to fear' },
+    { num => 8,  url_title => 'imprisoned',                      title => 'Imprisoned' },
+    { num => 9,  url_title => 'we-dont-like-that',               title => "We don't like that" },
+    { num => 10, url_title => 'heres-what-we-want',              title => "Here's what we want from you" },
+    { num => 11, url_title => 'anything-they-ask',               title => 'Anything they ask, answer them' },
+    { num => 12, url_title => 'freedom',                         title => 'All I could think of was freedom' },
+    { num => 13, url_title => 'nondescript-18-wheeler',          title => 'A nondescript white 18-wheeler' },
+    { num => 14, url_title => 'future',                          title => 'Future post' },
+);
+
+foreach my $post_data (@post_checks) {
+    $total_checks++;
+    my $post = $schema->resultset('BlogPost')->find({
+        url_title => $post_data->{url_title}
+    });
+    
+    if ($post) {
+        print "  ${RED}✗ FOUND:${RESET} Post #$post_data->{num} '$post_data->{title}' ";
+        print "${RED}still exists${RESET} - ID: " . $post->id . "\n";
+        $items_found++;
+        
+        # Check for associated data
+        if (defined $post->discussion) {
+            print "    ${DIM}${RED}├─ Has discussion (ID: " . $post->discussion . ")${RESET}\n";
+            
+            my $discussion = $schema->resultset('Discussion')->find($post->discussion);
+            if ($discussion) {
+                my $comment_count = $discussion->comments->count;
+                if ($comment_count > 0) {
+                    print "    ${DIM}${RED}│  └─ Has $comment_count comment(s)${RESET}\n";
+                }
+            }
+        }
+        
+        # Check for tagset
+        my $tagset = $schema->resultset('Tagset')->find({
+            resource_id   => $post->id,
+            resource_type => 'BlogPost',
+        });
+        if ($tagset) {
+            my @tags = $tagset->tags->all;
+            if (@tags) {
+                my $tag_list = join(', ', map { $_->tag } @tags);
+                print "    ${DIM}${RED}└─ Has tags: $tag_list${RESET}\n";
+            }
+        }
+    } else {
+        print "  ${GREEN}✓ REMOVED:${RESET} Post #$post_data->{num} '$post_data->{title}'\n";
+        $items_removed++;
+    }
+}
+
+print "\n";
+
+# Check Blog
+print "${BOLD}${YELLOW}Blog:${RESET}\n";
+print "${DIM}" . "-" x 50 . "${RESET}\n";
+
+$total_checks++;
+my $blog = $schema->resultset('Blog')->find({
+    title => 'Little Blogger'
+});
+
+if ($blog) {
+    print "  ${RED}✗ FOUND:${RESET} Blog 'Little Blogger' ";
+    print "${RED}still exists${RESET} - ID: " . $blog->id . "\n";
+    $items_found++;
+    
+    # Count remaining posts in this blog
+    my $post_count = $blog->blog_posts->count;
+    if ($post_count > 0) {
+        print "    ${DIM}${RED}└─ Has $post_count blog post(s)${RESET}\n";
+    }
+} else {
+    print "  ${GREEN}✓ REMOVED:${RESET} Blog 'Little Blogger'\n";
+    $items_removed++;
+}
+
+print "\n";
+
+# Check User
+print "${BOLD}${YELLOW}User:${RESET}\n";
+print "${DIM}" . "-" x 50 . "${RESET}\n";
+
+$total_checks++;
+my $user = $schema->resultset('User')->find({
+    username => 'w1n5t0n'
+});
+
+if ($user) {
+    print "  ${RED}✗ FOUND:${RESET} User 'w1n5t0n' ";
+    print "${RED}still exists${RESET} - ID: " . $user->id;
+    print ", Email: " . $user->email . "\n";
+    $items_found++;
+    
+    # Check for Blog Author role
+    my $role = $schema->resultset('Role')->find({ role => 'Blog Author' });
+    if ($role) {
+        my $user_role = $user->user_roles->find({ role => $role->id });
+        if ($user_role) {
+            print "    ${DIM}${RED}├─ Still has 'Blog Author' role${RESET}\n";
+        }
+    }
+    
+    # Check for authored posts
+    my $authored_posts = $schema->resultset('BlogPost')->search({
+        author => $user->id
+    })->count;
+    if ($authored_posts > 0) {
+        print "    ${DIM}${RED}├─ Has authored $authored_posts blog post(s)${RESET}\n";
+    }
+    
+    # Check for authored comments
+    my $authored_comments = $schema->resultset('Comment')->search({
+        author => $user->id,
+        author_type => 'Site User'
+    })->count;
+    if ($authored_comments > 0) {
+        print "    ${DIM}${RED}└─ Has authored $authored_comments comment(s)${RESET}\n";
+    }
+} else {
+    print "  ${GREEN}✓ REMOVED:${RESET} User 'w1n5t0n'\n";
+    $items_removed++;
+}
+
+print "\n";
+
+# Check for orphaned Discussions
+print "${BOLD}${YELLOW}Checking for Orphaned Discussions:${RESET}\n";
+print "${DIM}" . "-" x 50 . "${RESET}\n";
+
+my @discussions = $schema->resultset('Discussion')->search({
+    resource_type => 'BlogPost'
+})->all;
+
+my $orphaned_discussions = 0;
+foreach my $discussion (@discussions) {
+    my $post = $schema->resultset('BlogPost')->find($discussion->resource_id);
+    if (!$post) {
+        print "  ${YELLOW}⚠ WARNING:${RESET} Orphaned discussion found\n";
+        print "    ${DIM}├─ Discussion ID: ${BOLD}" . $discussion->id . "${RESET}\n";
+        print "    ${DIM}├─ Resource ID: " . $discussion->resource_id . " (missing BlogPost)${RESET}\n";
+        $orphaned_discussions++;
+        
+        # Show comments in orphaned discussion
+        my @comments = $discussion->comments->search({}, { order_by => 'id' })->all;
+        my $comment_count = scalar @comments;
+        
+        if ($comment_count > 0) {
+            print "    ${DIM}├─ Contains ${YELLOW}$comment_count${RESET}${DIM} comment(s):${RESET}\n";
+            
+            foreach my $comment (@comments) {
+                print "    ${DIM}│  ${CYAN}Comment ID " . $comment->id;
+                
+                if ($comment->parent) {
+                    print " (parent: " . $comment->parent . ")";
+                }
+                print "${RESET}\n";
+                
+                # Show first 60 chars of comment body
+                if ($comment->body) {
+                    my $body_preview = substr($comment->body, 0, 60);
+                    $body_preview =~ s/\n/ /g;
+                    $body_preview .= '...' if length($comment->body) > 60;
+                    print "    ${DIM}│    \"${body_preview}\"${RESET}\n";
+                }
+            }
+        } else {
+            print "    ${DIM}└─ No comments attached${RESET}\n";
+        }
+        
+        print "\n";
+    }
+}
+
+if ($orphaned_discussions == 0) {
+    print "  ${GREEN}✓${RESET} No orphaned discussions found\n";
+}
+
+$total_checks += $orphaned_discussions;
+
+print "\n";
+
+# Check for orphaned Tagsets
+print "${BOLD}${YELLOW}Checking for Orphaned Tagsets:${RESET}\n";
+print "${DIM}" . "-" x 50 . "${RESET}\n";
+
+my @tagsets = $schema->resultset('Tagset')->search({
+    resource_type => 'BlogPost'
+})->all;
+
+my $orphaned_tagsets = 0;
+foreach my $tagset (@tagsets) {
+    my $post = $schema->resultset('BlogPost')->find($tagset->resource_id);
+    if (!$post) {
+        print "  ${YELLOW}⚠ WARNING:${RESET} Orphaned tagset found\n";
+        print "    ${DIM}├─ Tagset ID: " . $tagset->id . "${RESET}\n";
+        print "    ${DIM}├─ Resource ID: " . $tagset->resource_id . " (missing BlogPost)${RESET}\n";
+        $orphaned_tagsets++;
+        
+        # Check for tags in orphaned tagset
+        my @tags = $tagset->tags->all;
+        if (@tags) {
+            my $tag_list = join(', ', map { "'$_->{tag}'" } @tags);
+            print "    ${DIM}└─ Tags: $tag_list${RESET}\n";
+        }
+    }
+}
+
+if ($orphaned_tagsets == 0) {
+    print "  ${GREEN}✓${RESET} No orphaned tagsets found\n";
+}
+
+$total_checks += $orphaned_tagsets;
+
+print "\n";
+
+# Check for orphaned Comments by the demo user
+print "${BOLD}${YELLOW}Checking for Orphaned Comments:${RESET}\n";
+print "${DIM}" . "-" x 50 . "${RESET}\n";
+
+# Get the user ID if user was deleted
+my $user_id;
+if ($user) {
+    $user_id = $user->id;
+} else {
+    # Try to find orphaned comments that might belong to deleted user
+    # This is tricky without the user, so we'll skip if user is gone
+    print "  ${DIM}○ User deleted, cannot check for orphaned comments${RESET}\n";
+}
+
+if ($user_id) {
+    my @orphaned_comments = $schema->resultset('Comment')->search({
+        author => $user_id,
+        author_type => 'Site User'
+    })->all;
+    
+    if (@orphaned_comments) {
+        print "  ${YELLOW}⚠ WARNING:${RESET} Found " . scalar(@orphaned_comments) . " orphaned comment(s)\n";
+        $orphaned_tagsets += scalar(@orphaned_comments);
+    } else {
+        print "  ${GREEN}✓${RESET} No orphaned comments from demo user\n";
+    }
+}
+
+print "\n";
+
+# Summary Section
+print "${BOLD}${CYAN}=" x 70 . "${RESET}\n";
+print "${BOLD}VERIFICATION SUMMARY${RESET}\n";
+print "${CYAN}" . "-" x 70 . "${RESET}\n";
+
+print "Total items checked: ${BOLD}$total_checks${RESET}\n";
+print "Items successfully removed: ${GREEN}${BOLD}$items_removed${RESET}\n";
+print "Items still in database: ${RED}${BOLD}$items_found${RESET}\n";
+
+if ($orphaned_discussions > 0 || $orphaned_tagsets > 0) {
+    my $orphaned_total = $orphaned_discussions + $orphaned_tagsets;
+    print "Orphaned items found: ${YELLOW}${BOLD}$orphaned_total${RESET}\n";
+}
+
+print "\n";
+
+# Final Status
+if ($items_found == 0 && $orphaned_discussions == 0 && $orphaned_tagsets == 0) {
+    print "${GREEN}${BOLD}✓ SUCCESS: All blog demo data has been successfully removed!${RESET}\n";
+    print "${GREEN}The database is clean.${RESET}\n";
+} elsif ($items_found > 0) {
+    print "${RED}${BOLD}✗ FAILURE: Blog demo data still exists in the database!${RESET}\n";
+    print "${RED}Please run the cleanup script to remove remaining items.${RESET}\n";
+} else {
+    print "${YELLOW}${BOLD}⚠ WARNING: Main data removed but orphaned items remain!${RESET}\n";
+    print "${YELLOW}Consider running a deep cleanup to remove orphaned records.${RESET}\n";
+}
+
+print "${CYAN}=" x 70 . "${RESET}\n";

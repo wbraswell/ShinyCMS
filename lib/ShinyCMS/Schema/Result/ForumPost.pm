@@ -234,7 +234,9 @@ sub purge_tags {
   }
 }
 
-# KBAKER 20250916: created purge() subroutine for removing discussion, comment, and tags; this is for test suite use only
+# KBAKER 20250916: created purge() subroutine for removing "discussion" and "comments" tables pointed to by the result sources in the "blog_post" schema,
+# and deleting the "blog_post" database table itself; this is for test suite use only;
+# also removed tags as described in purge_tags() above
 sub purge {
   my($self) = @_;
 

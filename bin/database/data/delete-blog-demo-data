@@ -1,0 +1,310 @@
+#!/usr/bin/env perl
+
+# ===================================================================
+# File:		bin/database/delete-blog-demo-data
+# Purpose:	Delete blog demo data via DBIC (in reverse order)
+# 
+# Author:	Kai Baker <eigenspaces@gmail.com>
+#
+# This script removes all blog demo data in the reverse order
+# it was created to properly handle foreign key dependencies.
+# ===================================================================
+
+use strict;
+use warnings;
+
+# CPAN modules
+use Term::ANSIColor qw(:constants);
+use DateTime::Duration;
+
+# Load local helper lib and get connected schema object
+use FindBin qw( $Bin );
+use lib "$Bin/../../lib";
+require 'helpers.pl';  ## no critic
+
+my $schema = get_schema();
+
+# ANSI color codes
+my $RESET = RESET;
+my $GREEN = GREEN;
+my $RED = RED;
+my $YELLOW = YELLOW;
+my $CYAN = CYAN;
+my $BOLD = BOLD;
+my $DIM = FAINT;
+my $MAGENTA = MAGENTA;
+my $BLUE = BLUE;
+
+print "${BOLD}${CYAN}=" x 70 . "${RESET}\n";
+print "${BOLD}${CYAN}BLOG DEMO DATA CLEANUP${RESET}\n";
+print "${CYAN}=" x 70 . "${RESET}\n\n";
+print "Starting blog demo data cleanup in reverse order...\n\n";
+
+# Counter for tracking deletions
+my $total_deleted = 0;
+my $errors = 0;
+
+# Step 1: Delete blog posts in reverse order (14 to 1)
+print "${BOLD}${YELLOW}Removing Blog Posts and Associated Data:${RESET}\n";
+print "${DIM}" . "-" x 50 . "${RESET}\n";
+
+# Define the blog posts to delete (in reverse order)
+my @posts_to_delete = (
+    { url_title => 'future',                     num => 14 },
+    { url_title => 'nondescript-18-wheeler',     num => 13 },
+    { url_title => 'freedom',                    num => 12 },
+    { url_title => 'anything-they-ask',          num => 11 },
+    { url_title => 'heres-what-we-want',         num => 10 },
+    { url_title => 'we-dont-like-that',          num => 9  },
+    { url_title => 'imprisoned',                 num => 8  },
+    { url_title => 'nothing-to-hide-nothing-to-fear', num => 7 },
+    { url_title => 'liberty-vs-security',        num => 6  },
+    { url_title => 'kidnapped',                  num => 5  },
+    { url_title => 'the-madding-crowd',          num => 4  },
+    { url_title => 'then-the-world-changed-forever', num => 3 },
+    { url_title => 'false-positives',            num => 2  },
+    { url_title => 'w1n5t0n',                    num => 1  },
+);
+
+foreach my $post_data (@posts_to_delete) {
+    my $blog_post = $schema->resultset('BlogPost')->find({
+        # Find by id instead of url_title
+        url_title => $post_data->{url_title}
+    });
+    
+    if ($blog_post) {
+        print "\n${MAGENTA}Blog Post #$post_data->{num}:${RESET} '$blog_post->{title}'\n";
+
+        # Delete tags and tagset
+        my $tagset = $schema->resultset('Tagset')->find({
+            resource_id   => $blog_post->id,
+            resource_type => 'BlogPost',
+        });
+        
+        if ($tagset) {
+            my @tags = $tagset->tags->all;
+            my $tag_count = scalar @tags;
+            
+            if ($tag_count > 0) {
+                my @tag_names = map { $_->tag } @tags;
+                $tagset->tags->delete_all;
+                print "  ${GREEN}✓${RESET} Deleted $tag_count tag(s): " . 
+                      join(', ', @tag_names) . "\n";
+                $total_deleted += $tag_count;
+            }
+            
+            $tagset->delete;
+            print "  ${GREEN}✓${RESET} Deleted tagset\n";
+            $total_deleted++;
+        } else {
+            print "  ${DIM}○ No tagset found${RESET}\n";
+        }
+        
+        # Delete discussion and comments if present
+        if (defined $blog_post->discussion) {
+            my $discussion = $schema->resultset('Discussion')->find(
+                $blog_post->id
+            );
+            
+            if ($discussion) {
+                # Delete all comments
+                my @comments = $discussion->comments->search(
+                    {},
+                    { order_by => { -desc => 'id' } }
+                )->all;
+                
+                my $comment_count = scalar @comments;
+                if ($comment_count > 0) {
+                    foreach my $comment (@comments) {
+                        $comment->delete;
+                    }
+                    print "  ${GREEN}✓${RESET} Deleted $comment_count comment(s)\n";
+                    $total_deleted += $comment_count;
+                }
+                
+                # Remove discussion reference from post first
+                $blog_post->update({ discussion => undef });
+                
+                # Delete the discussion
+                $discussion->delete;
+                print "  ${GREEN}✓${RESET} Deleted discussion thread\n";
+                $total_deleted++;
+            }
+        } else {
+            print "  ${DIM}○ No discussion thread (comments disabled)${RESET}\n";
+        }
+        
+        # Delete the blog post itself
+        my $title = $blog_post->title;
+        $blog_post->purge;
+        print "  ${GREEN}✓${RESET} Deleted blog post: '${title}'\n";
+        $total_deleted++;
+        
+    } else {
+        print "\n${YELLOW}⚠ WARNING:${RESET} Blog post '$post_data->{url_title}' not found\n";
+    }
+}
+
+print "\n";
+
+# Step 2: Delete the blog
+print "${BOLD}${YELLOW}Removing Blog:${RESET}\n";
+print "${DIM}" . "-" x 50 . "${RESET}\n";
+
+my $blog = $schema->resultset('Blog')->find({
+    title => 'Little Blogger'
+});
+
+if ($blog) {
+    # Check if there are any remaining posts
+    my $remaining_posts = $blog->blog_posts->count;
+    
+    if ($remaining_posts > 0) {
+        print "  ${RED}✗ ERROR:${RESET} Cannot delete blog - ";
+        print "still has $remaining_posts post(s)\n";
+        $errors++;
+    } else {
+        $blog->delete;
+        print "  ${GREEN}✓${RESET} Deleted blog 'Little Blogger'\n";
+        $total_deleted++;
+    }
+} else {
+    print "  ${YELLOW}⚠${RESET} Blog 'Little Blogger' not found\n";
+}
+
+print "\n";
+
+# Step 3: Remove user role assignment
+print "${BOLD}${YELLOW}Removing User Role Assignments:${RESET}\n";
+print "${DIM}" . "-" x 50 . "${RESET}\n";
+
+my $user = $schema->resultset('User')->find({
+    username => 'w1n5t0n'
+});
+
+if ($user) {
+    my $blog_author_role = $schema->resultset('Role')->find({
+        role => 'Blog Author'
+    });
+    
+    if ($blog_author_role) {
+        my $user_role = $user->user_roles->find({
+            role => $blog_author_role->id
+        });
+        
+        if ($user_role) {
+            $user_role->delete;
+            print "  ${GREEN}✓${RESET} Removed 'Blog Author' role from user 'w1n5t0n'\n";
+            $total_deleted++;
+        } else {
+            print "  ${DIM}○ User doesn't have 'Blog Author' role${RESET}\n";
+        }
+    }
+} else {
+    print "  ${YELLOW}⚠${RESET} User 'w1n5t0n' not found\n";
+}
+
+print "\n";
+
+# Step 4: Delete the demo user
+print "${BOLD}${YELLOW}Removing Demo User:${RESET}\n";
+print "${DIM}" . "-" x 50 . "${RESET}\n";
+
+if ($user) {
+    # Check for any remaining dependencies
+    my $post_count = $schema->resultset('BlogPost')->search({
+        author => $user->id
+    })->count;
+    
+    my $comment_count = $schema->resultset('Comment')->search({
+        author => $user->id
+    })->count;
+    
+    if ($post_count > 0 || $comment_count > 0) {
+        print "  ${RED}✗ ERROR:${RESET} Cannot delete user 'w1n5t0n'\n";
+        print "    Still has: ";
+        my @deps;
+        push @deps, "$post_count post(s)" if $post_count > 0;
+        push @deps, "$comment_count comment(s)" if $comment_count > 0;
+        print join(', ', @deps) . "\n";
+        $errors++;
+    } else {
+        my $email = $user->email;
+        $user->delete;
+        print "  ${GREEN}✓${RESET} Deleted user 'w1n5t0n' ($email)\n";
+        $total_deleted++;
+    }
+} else {
+    print "  ${DIM}○ User 'w1n5t0n' not found${RESET}\n";
+}
+
+print "\n";
+
+# Summary
+print "${BOLD}${CYAN}=" x 70 . "${RESET}\n";
+print "${BOLD}CLEANUP SUMMARY${RESET}\n";
+print "${CYAN}" . "-" x 70 . "${RESET}\n";
+
+print "Total items deleted: ${GREEN}${BOLD}$total_deleted${RESET}\n";
+print "Errors encountered: ";
+if ($errors > 0) {
+    print "${RED}${BOLD}$errors${RESET}\n";
+} else {
+    print "${GREEN}${BOLD}0${RESET}\n";
+}
+
+print "\n";
+
+# Verification
+print "${BOLD}${YELLOW}Verification:${RESET}\n";
+print "${DIM}" . "-" x 40 . "${RESET}\n";
+
+# Check for remaining blog posts
+my $remaining_posts = $schema->resultset('BlogPost')->search({
+    -or => [
+        map { { url_title => $_->{url_title} } } @posts_to_delete
+    ]
+})->count;
+print "Remaining demo blog posts: ";
+if ($remaining_posts == 0) {
+    print "${GREEN}0${RESET}\n";
+} else {
+    print "${RED}$remaining_posts${RESET}\n";
+}
+
+# Check for the demo user
+my $demo_user_exists = $schema->resultset('User')->search({
+    username => 'w1n5t0n'
+})->count;
+print "Demo user 'w1n5t0n' exists: ";
+if ($demo_user_exists == 0) {
+    print "${GREEN}No${RESET}\n";
+} else {
+    print "${RED}Yes${RESET}\n";
+}
+
+# Check for the blog
+my $blog_exists = $schema->resultset('Blog')->search({
+    title => 'Little Blogger'
+})->count;
+print "Blog 'Little Blogger' exists: ";
+if ($blog_exists == 0) {
+    print "${GREEN}No${RESET}\n";
+} else {
+    print "${RED}Yes${RESET}\n";
+}
+
+# Final status
+print "\n";
+if ($errors == 0 && $remaining_posts == 0 && $demo_user_exists == 0 && $blog_exists == 0) {
+    print "${GREEN}${BOLD}✓ SUCCESS: All blog demo data has been removed!${RESET}\n";
+    exit 0;
+} elsif ($errors > 0) {
+    print "${RED}${BOLD}✗ FAILURE: Some items could not be deleted due to dependencies.${RESET}\n";
+    exit 1;
+} else {
+    print "${YELLOW}${BOLD}⚠ WARNING: Some demo data may still remain.${RESET}\n";
+    exit 2;
+}
+
+print "${CYAN}=" x 70 . "${RESET}\n";
