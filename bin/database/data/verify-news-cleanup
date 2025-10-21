@@ -1,0 +1,461 @@
+#!/usr/bin/env perl
+
+# ===================================================================
+# File:     verify-news-cleanup.pl
+# Purpose:  Verify no orphaned news-related data remains
+#
+# Author:	Kai Baker <eigenspaces@gmail.com>
+#
+# ShinyCMS is free software; you can redistribute it and/or modify it
+# under the terms of either the GPL 2.0 or the Artistic License 2.0
+# ===================================================================
+
+use strict;
+use warnings;
+use Term::ANSIColor;
+
+# ANSI color codes for better readability
+my $GREEN  = color('green');
+my $YELLOW = color('yellow');
+my $RED    = color('red');
+my $CYAN   = color('cyan');
+my $MAGENTA = color('magenta');
+my $BLUE   = color('blue');
+my $BOLD   = color('bold');
+my $RESET  = color('reset');
+
+# Load local helper lib and get connected schema object
+use FindBin qw( $Bin );
+use lib "$Bin/../../lib";
+
+# Check if we can load the helper module
+require 'helpers.pl';
+
+if ($@) {
+    print "${RED}[ERROR]${RESET} Cannot load helpers.pl: $@\n";
+    print "${YELLOW}[INFO]${RESET} Make sure helpers.pl is in the lib directory\n";
+    exit 1;
+}
+
+print "${BLUE}===========================================${RESET}\n";
+print "${BLUE}    News Data Verification Script          ${RESET}\n";
+print "${BLUE}===========================================${RESET}\n\n";
+
+# Get schema connection
+my $schema;
+eval {
+    $schema = get_schema();
+};
+if ($@) {
+    print "${RED}[ERROR]${RESET} Failed to get database schema: $@\n";
+    exit 1;
+}
+
+print "${GREEN}[OK]${RESET} Database connection established\n\n";
+
+# Track orphaned data
+my $orphaned_data_found = 0;
+my @orphan_reports;
+my %verification_stats;
+
+# ============================================
+# 1. Check for User 'trevor'
+# ============================================
+print "${CYAN}[1/10] Checking for demo user 'trevor'...${RESET}\n";
+
+my $demo_user;
+eval {
+    $demo_user = $schema->resultset('User')->find({ username => 'trevor' });
+};
+
+if ($@) {
+    print "${RED}  ✗${RESET} Error checking for user: $@\n";
+} elsif ($demo_user) {
+    print "${YELLOW}  ⚠${RESET} Demo user 'trevor' still exists\n";
+    print "    - ID: ${YELLOW}" . $demo_user->id . "${RESET}\n";
+    print "    - Email: ${YELLOW}" . $demo_user->email . "${RESET}\n";
+    print "    - Name: ${YELLOW}" . $demo_user->firstname . " " . $demo_user->surname . "${RESET}\n";
+    
+    if ($demo_user->admin_notes && $demo_user->admin_notes =~ /news demo data/) {
+        print "    - ${MAGENTA}Admin notes confirm this is demo data${RESET}\n";
+    }
+    
+    $orphaned_data_found = 1;
+    push @orphan_reports, "Demo user 'trevor' found";
+    $verification_stats{users} = 1;
+} else {
+    print "${GREEN}  ✓${RESET} Demo user 'trevor' not found (clean)\n";
+    $verification_stats{users} = 0;
+}
+
+# ============================================
+# 2. Check for 'News Admin' Role
+# ============================================
+print "\n${CYAN}[2/10] Checking for 'News Admin' role...${RESET}\n";
+
+eval {
+    my $news_admin_role = $schema->resultset('Role')->find({ role => 'News Admin' });
+    
+    if ($news_admin_role) {
+        print "${YELLOW}  ⚠${RESET} 'News Admin' role still exists\n";
+        print "    - ID: ${YELLOW}" . $news_admin_role->id . "${RESET}\n";
+        
+        # Check how many users have this role
+        my $role_users = $schema->resultset('UserRole')->search({
+            role => $news_admin_role->id
+        })->count;
+        
+        if ($role_users > 0) {
+            print "    - ${MAGENTA}Still assigned to $role_users user(s)${RESET}\n";
+        }
+        
+        $orphaned_data_found = 1;
+        push @orphan_reports, "'News Admin' role found";
+        $verification_stats{roles} = 1;
+    } else {
+        print "${GREEN}  ✓${RESET} 'News Admin' role not found (clean)\n";
+        $verification_stats{roles} = 0;
+    }
+};
+if ($@) {
+    print "${RED}  ✗${RESET} Error checking roles: $@\n";
+}
+
+# ============================================
+# 3. Check for News Items
+# ============================================
+print "\n${CYAN}[3/10] Checking for news items...${RESET}\n";
+
+my @news_items;
+eval {
+    @news_items = $schema->resultset('NewsItem')->all;
+    $verification_stats{news_items} = scalar(@news_items);
+};
+
+if ($@) {
+    print "${RED}  ✗${RESET} Error checking news items: $@\n";
+} elsif (@news_items) {
+    print "${RED}  ✗${RESET} Found " . scalar(@news_items) . " news item(s) still in database:\n";
+    
+    # Check if any belong to the demo user
+    my $demo_items = 0;
+    foreach my $item (@news_items) {
+        my $is_demo = 0;
+        if ($demo_user && $item->author == $demo_user->id) {
+            $is_demo = 1;
+            $demo_items++;
+        }
+        
+        print "    - ${CYAN}" . substr($item->title, 0, 50) . 
+              (length($item->title) > 50 ? "..." : "") . "${RESET}\n";
+        print "      ID: ${YELLOW}" . $item->id . "${RESET}";
+        print ", URL: ${YELLOW}" . $item->url_title . "${RESET}";
+        print ", Author: ${YELLOW}" . $item->author . "${RESET}";
+        print $is_demo ? " ${MAGENTA}(demo data)${RESET}" : "";
+        print "\n";
+    }
+    
+    if ($demo_items > 0) {
+        push @orphan_reports, "$demo_items demo news item(s) found";
+    }
+    
+    $orphaned_data_found = 1;
+} else {
+    print "${GREEN}  ✓${RESET} No news items found (clean)\n";
+}
+
+# ============================================
+# 4. Check for Orphaned Discussions
+# ============================================
+print "\n${CYAN}[4/10] Checking for orphaned discussions...${RESET}\n";
+
+eval {
+    my @news_discussions = $schema->resultset('Discussion')->search({
+        resource_type => 'NewsItem'
+    })->all;
+    
+    $verification_stats{discussions} = scalar(@news_discussions);
+    
+    if (@news_discussions) {
+        print "${YELLOW}  ⚠${RESET} Found " . scalar(@news_discussions) . " NewsItem discussion(s):\n";
+        
+        foreach my $disc (@news_discussions) {
+            my $news_item_exists = $schema->resultset('NewsItem')->find($disc->resource_id);
+            
+            print "    - Discussion ID: ${YELLOW}" . $disc->id . "${RESET}";
+            print ", NewsItem ID: ${YELLOW}" . $disc->resource_id . "${RESET}";
+            
+            if (!$news_item_exists) {
+                print " ${RED}(ORPHANED - NewsItem missing!)${RESET}";
+                push @orphan_reports, "Orphaned discussion (ID: " . $disc->id . ")";
+            } else {
+                print " ${GREEN}(linked)${RESET}";
+            }
+            print "\n";
+        }
+        
+        $orphaned_data_found = 1;
+    } else {
+        print "${GREEN}  ✓${RESET} No NewsItem discussions found (clean)\n";
+    }
+};
+if ($@) {
+    print "${RED}  ✗${RESET} Error checking discussions: $@\n";
+}
+
+# ============================================
+# 5. Check for Orphaned Comments
+# ============================================
+print "\n${CYAN}[5/10] Checking for orphaned comments...${RESET}\n";
+
+eval {
+    my $total_comments = 0;
+    my $orphaned_comments = 0;
+    
+    # Get all discussions for NewsItems
+    my @news_discussions = $schema->resultset('Discussion')->search({
+        resource_type => 'NewsItem'
+    })->all;
+    
+    foreach my $disc (@news_discussions) {
+        my $comment_count = $disc->comments->count;
+        $total_comments += $comment_count;
+        
+        # Check if the parent NewsItem exists
+        my $news_item_exists = $schema->resultset('NewsItem')->find($disc->resource_id);
+        if (!$news_item_exists && $comment_count > 0) {
+            $orphaned_comments += $comment_count;
+        }
+    }
+    
+    $verification_stats{comments} = $total_comments;
+    
+    if ($total_comments > 0) {
+        print "${YELLOW}  ⚠${RESET} Found $total_comments comment(s) in NewsItem discussions\n";
+        
+        if ($orphaned_comments > 0) {
+            print "    - ${RED}$orphaned_comments comment(s) are orphaned (parent NewsItem missing)${RESET}\n";
+            push @orphan_reports, "$orphaned_comments orphaned comment(s)";
+        }
+        
+        $orphaned_data_found = 1;
+    } else {
+        print "${GREEN}  ✓${RESET} No comments found in NewsItem discussions (clean)\n";
+    }
+};
+if ($@) {
+    print "${RED}  ✗${RESET} Error checking comments: $@\n";
+}
+
+# ============================================
+# 6. Check for Orphaned Tagsets
+# ============================================
+print "\n${CYAN}[6/10] Checking for orphaned tagsets...${RESET}\n";
+
+eval {
+    my @news_tagsets = $schema->resultset('Tagset')->search({
+        resource_type => 'NewsItem'
+    })->all;
+    
+    $verification_stats{tagsets} = scalar(@news_tagsets);
+    
+    if (@news_tagsets) {
+        print "${YELLOW}  ⚠${RESET} Found " . scalar(@news_tagsets) . " NewsItem tagset(s):\n";
+        
+        my $orphaned_tagsets = 0;
+        foreach my $tagset (@news_tagsets) {
+            my $news_item_exists = $schema->resultset('NewsItem')->find($tagset->resource_id);
+            
+            print "    - Tagset ID: ${YELLOW}" . $tagset->id . "${RESET}";
+            print ", NewsItem ID: ${YELLOW}" . $tagset->resource_id . "${RESET}";
+            
+            if (!$news_item_exists) {
+                print " ${RED}(ORPHANED - NewsItem missing!)${RESET}";
+                $orphaned_tagsets++;
+            } else {
+                print " ${GREEN}(linked)${RESET}";
+            }
+            
+            # Count tags in this tagset
+            my $tag_count = $tagset->tags->count;
+            if ($tag_count > 0) {
+                print " [${CYAN}$tag_count tag(s)${RESET}]";
+            }
+            print "\n";
+        }
+        
+        if ($orphaned_tagsets > 0) {
+            push @orphan_reports, "$orphaned_tagsets orphaned tagset(s)";
+        }
+        
+        $orphaned_data_found = 1;
+    } else {
+        print "${GREEN}  ✓${RESET} No NewsItem tagsets found (clean)\n";
+    }
+};
+if ($@) {
+    print "${RED}  ✗${RESET} Error checking tagsets: $@\n";
+}
+
+# ============================================
+# 7. Check for Orphaned Tags
+# ============================================
+print "\n${CYAN}[7/10] Checking for orphaned tags...${RESET}\n";
+
+eval {
+    my $total_tags = 0;
+    my @news_tagsets = $schema->resultset('Tagset')->search({
+        resource_type => 'NewsItem'
+    })->all;
+    
+    foreach my $tagset (@news_tagsets) {
+        $total_tags += $tagset->tags->count;
+    }
+    
+    $verification_stats{tags} = $total_tags;
+    
+    if ($total_tags > 0) {
+        print "${YELLOW}  ⚠${RESET} Found $total_tags tag(s) in NewsItem tagsets\n";
+        
+        # Show tag details
+        foreach my $tagset (@news_tagsets) {
+            my @tags = $tagset->tags->all;
+            foreach my $tag (@tags) {
+                print "    - Tag: ${CYAN}'" . $tag->tag . "'${RESET} (Tagset ID: " . $tagset->id . ")\n";
+            }
+        }
+        
+        $orphaned_data_found = 1;
+    } else {
+        print "${GREEN}  ✓${RESET} No tags found in NewsItem tagsets (clean)\n";
+    }
+};
+if ($@) {
+    print "${RED}  ✗${RESET} Error checking tags: $@\n";
+}
+
+# ============================================
+# 8. Check User Roles for demo user
+# ============================================
+print "\n${CYAN}[8/10] Checking user roles...${RESET}\n";
+
+eval {
+    if ($demo_user) {
+        my @user_roles = $demo_user->user_roles->all;
+        $verification_stats{user_roles} = scalar(@user_roles);
+        
+        if (@user_roles) {
+            print "${YELLOW}  ⚠${RESET} Demo user 'trevor' has " . scalar(@user_roles) . " role(s):\n";
+            
+            foreach my $user_role (@user_roles) {
+                my $role = $schema->resultset('Role')->find($user_role->role);
+                if ($role) {
+                    print "    - ${CYAN}" . $role->role . "${RESET} (Role ID: " . $role->id . ")\n";
+                }
+            }
+            
+            $orphaned_data_found = 1;
+            push @orphan_reports, "Demo user has " . scalar(@user_roles) . " role(s)";
+        } else {
+            print "${GREEN}  ✓${RESET} Demo user has no roles\n";
+        }
+    } else {
+        print "${GREEN}  ✓${RESET} No demo user found (clean)\n";
+        $verification_stats{user_roles} = 0;
+    }
+};
+if ($@) {
+    print "${RED}  ✗${RESET} Error checking user roles: $@\n";
+}
+
+# ============================================
+# 9. Database integrity check
+# ============================================
+print "\n${CYAN}[9/10] Checking database integrity...${RESET}\n";
+
+my $integrity_issues = 0;
+
+# Check for news items without authors
+eval {
+    my @items_no_author = $schema->resultset('NewsItem')->search({
+        author => undef
+    })->all;
+    
+    if (@items_no_author) {
+        print "${YELLOW}  ⚠${RESET} Found " . scalar(@items_no_author) . " news item(s) without authors\n";
+        $integrity_issues++;
+    }
+};
+
+# Check for news items with non-existent authors
+eval {
+    my @all_items = $schema->resultset('NewsItem')->all;
+    my @items_bad_author;
+    
+    foreach my $item (@all_items) {
+        if ($item->author) {
+            my $author = $schema->resultset('User')->find($item->author);
+            if (!$author) {
+                push @items_bad_author, $item;
+            }
+        }
+    }
+    
+    if (@items_bad_author) {
+        print "${YELLOW}  ⚠${RESET} Found " . scalar(@items_bad_author) . " news item(s) with non-existent authors\n";
+        $integrity_issues++;
+    }
+};
+
+if ($integrity_issues == 0) {
+    print "${GREEN}  ✓${RESET} No integrity issues found\n";
+} else {
+    push @orphan_reports, "$integrity_issues integrity issue(s)";
+}
+
+# ============================================
+# 10. Generate comprehensive statistics
+# ============================================
+print "\n${CYAN}[10/10] Generating comprehensive statistics...${RESET}\n";
+
+print "${MAGENTA}  Database Statistics:${RESET}\n";
+print "    Users (demo):     " . ($verification_stats{users} || 0) . "\n";
+print "    Roles (News Admin): " . ($verification_stats{roles} || 0) . "\n";
+print "    User Roles:       " . ($verification_stats{user_roles} || 0) . "\n";
+print "    News Items:       " . ($verification_stats{news_items} || 0) . "\n";
+print "    Discussions:      " . ($verification_stats{discussions} || 0) . "\n";
+print "    Comments:         " . ($verification_stats{comments} || 0) . "\n";
+print "    Tagsets:          " . ($verification_stats{tagsets} || 0) . "\n";
+print "    Tags:             " . ($verification_stats{tags} || 0) . "\n";
+
+# ============================================
+# Final Summary
+# ============================================
+print "\n${BLUE}===========================================${RESET}\n";
+print "${BLUE}         VERIFICATION SUMMARY              ${RESET}\n";
+print "${BLUE}===========================================${RESET}\n\n";
+
+if ($orphaned_data_found) {
+    print "${RED}${BOLD}[FAILED]${RESET} News demo data or orphaned records detected!\n\n";
+    print "${YELLOW}Issues found:${RESET}\n";
+    foreach my $report (@orphan_reports) {
+        print "  ${RED}✗${RESET} $report\n";
+    }
+    
+    print "\n${YELLOW}[RECOMMENDATION]${RESET} To clean up the remaining data:\n";
+    print "  1. Run the removal script: ${CYAN}perl remove-news-data.pl${RESET}\n";
+    print "  2. If orphaned data persists, manually remove:\n";
+    print "     - Orphaned discussions and comments first\n";
+    print "     - Orphaned tagsets and tags\n";
+    print "     - Then retry the removal script\n";
+    
+    # Return non-zero exit code for failure
+    exit 1;
+} else {
+    print "${GREEN}${BOLD}[PASSED]${RESET} No news demo data or orphaned records found!\n";
+    print "${GREEN}  ✓${RESET} Database is clean of news demo data\n";
+    print "${GREEN}  ✓${RESET} No orphaned records detected\n";
+    
+    # Return zero exit code for success
+    exit 0;
+}

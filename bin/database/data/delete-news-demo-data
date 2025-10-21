@@ -1,0 +1,356 @@
+#!/usr/bin/env perl
+
+# ===================================================================
+# File:     remove-news-data.pl
+# Purpose:  Remove news demo data in reverse order with ANSI colors
+#
+# Author:	Kai Baker <eigenspaces@gmail.com>
+#
+# ShinyCMS is free software; you can redistribute it and/or modify it
+# under the terms of either the GPL 2.0 or the Artistic License 2.0
+# ===================================================================
+
+use strict;
+use warnings;
+use Term::ANSIColor;
+
+# ANSI color codes for better readability
+my $GREEN  = color('green');
+my $YELLOW = color('yellow');
+my $RED    = color('red');
+my $CYAN   = color('cyan');
+my $MAGENTA = color('magenta');
+my $BLUE   = color('blue');
+my $RESET  = color('reset');
+
+# Load local helper lib and get connected schema object
+use FindBin qw( $Bin );
+use lib "$Bin/../../lib";
+
+# Check if we can load the helper module
+require 'helpers.pl';
+
+if ($@) {
+    print "${RED}[ERROR]${RESET} Cannot load helpers.pl: $@\n";
+    print "${YELLOW}[INFO]${RESET} Make sure helpers.pl is in the lib directory\n";
+    exit 1;
+}
+
+print "${MAGENTA}===========================================${RESET}\n";
+print "${MAGENTA}      News Data Removal Script             ${RESET}\n";
+print "${MAGENTA}===========================================${RESET}\n\n";
+
+# Get schema connection
+my $schema;
+eval {
+    $schema = get_schema();
+};
+if ($@) {
+    print "${RED}[ERROR]${RESET} Failed to get database schema: $@\n";
+    exit 1;
+}
+
+print "${GREEN}[OK]${RESET} Database connection established\n\n";
+
+# Track removal statistics
+my $total_removed = 0;
+my %removal_stats = (
+    comments     => 0,
+    discussions  => 0,
+    tags         => 0,
+    tagsets      => 0,
+    news_items   => 0,
+    user_roles   => 0,
+    roles        => 0,
+    users        => 0,
+);
+
+# ============================================
+# STEP 1: Remove Comments (reverse order)
+# ============================================
+print "${CYAN}[STEP 1/8]${RESET} Removing comments...\n";
+
+eval {
+    # Find all comments related to news discussions
+    my @news_discussions = $schema->resultset('Discussion')->search({
+        resource_type => 'NewsItem'
+    })->all;
+    
+    foreach my $discussion (@news_discussions) {
+        my @comments = $discussion->comments->search(
+            {},
+            { order_by => { -desc => 'id' } }
+        )->all;
+        
+        foreach my $comment (@comments) {
+            my $comment_id = $comment->id;
+            $comment->delete;
+            $removal_stats{comments}++;
+            print "${GREEN}  ✓${RESET} Removed comment ID: ${YELLOW}$comment_id${RESET}\n";
+        }
+    }
+};
+if ($@) {
+    print "${RED}  ✗${RESET} Error removing comments: $@\n";
+}
+
+if ($removal_stats{comments} == 0) {
+    print "${YELLOW}  ⚠${RESET} No comments found to remove\n";
+}
+
+# ============================================
+# STEP 2: Remove Discussions
+# ============================================
+print "\n${CYAN}[STEP 2/8]${RESET} Removing discussions...\n";
+
+eval {
+    my @discussions = $schema->resultset('Discussion')->search({
+        resource_type => 'NewsItem'
+    }, {
+        order_by => { -desc => 'id' }
+    })->all;
+    
+    foreach my $discussion (@discussions) {
+        my $disc_id = $discussion->id;
+        my $resource_id = $discussion->resource_id;
+        $discussion->delete;
+        $removal_stats{discussions}++;
+        print "${GREEN}  ✓${RESET} Removed discussion ID: ${YELLOW}$disc_id${RESET} (NewsItem: $resource_id)\n";
+    }
+};
+if ($@) {
+    print "${RED}  ✗${RESET} Error removing discussions: $@\n";
+}
+
+if ($removal_stats{discussions} == 0) {
+    print "${YELLOW}  ⚠${RESET} No discussions found to remove\n";
+}
+
+# ============================================
+# STEP 3: Remove Tags
+# ============================================
+print "\n${CYAN}[STEP 3/8]${RESET} Removing tags...\n";
+
+eval {
+    # Find tagsets for NewsItems
+    my @tagsets = $schema->resultset('Tagset')->search({
+        resource_type => 'NewsItem'
+    })->all;
+    
+    foreach my $tagset (@tagsets) {
+        # Remove tags first (reverse order)
+        my @tags = $tagset->tags->search(
+            {},
+            { order_by => { -desc => 'tag' } }
+        )->all;
+        
+        foreach my $tag (@tags) {
+            my $tag_name = $tag->tag;
+            $tag->delete;
+            # $tag->purge_tags();
+            $removal_stats{tags}++;
+            print "${GREEN}  ✓${RESET} Removed tag: ${YELLOW}'$tag_name'${RESET}\n";
+        }
+    }
+};
+if ($@) {
+    print "${RED}  ✗${RESET} Error removing tags: $@\n";
+}
+
+if ($removal_stats{tags} == 0) {
+    print "${YELLOW}  ⚠${RESET} No tags found to remove\n";
+}
+
+# ============================================
+# STEP 4: Remove Tagsets
+# ============================================
+print "\n${CYAN}[STEP 4/8]${RESET} Removing tagsets...\n";
+
+eval {
+    my @tagsets = $schema->resultset('Tagset')->search({
+        resource_type => 'NewsItem'
+    }, {
+        order_by => { -desc => 'id' }
+    })->all;
+    
+    foreach my $tagset (@tagsets) {
+        my $tagset_id = $tagset->id;
+        my $resource_id = $tagset->resource_id;
+        my @tags = $tagset->tag_list();
+        $tagset->delete;
+        $removal_stats{tagsets}++;
+        print "${GREEN}  ✓${RESET} Removed tagset ID: ${YELLOW}$tagset_id${RESET} (NewsItem: $resource_id)\n";
+    }
+};
+if ($@) {
+    print "${RED}  ✗${RESET} Error removing tagsets: $@\n";
+}
+
+if ($removal_stats{tagsets} == 0) {
+    print "${YELLOW}  ⚠${RESET} No tagsets found to remove\n";
+}
+
+
+# ============================================
+# STEP 5: Remove News Items (reverse order)
+# ============================================
+print "\n${CYAN}[STEP 5/8]${RESET} Removing news items...\n";
+
+my @news_items_removed;
+eval {
+    # Remove in reverse chronological order (newest first)
+    my @news_items = $schema->resultset('NewsItem')->search(
+        {},
+        { order_by => { -desc => 'posted' } }
+    )->all;
+    
+    foreach my $news_item (@news_items) {
+        my $title = $news_item->title;
+        my $url_title = $news_item->url_title;
+        my $item_id = $news_item->id;
+        push @news_items_removed, { title => $title, id => $item_id };
+        
+        $news_item->delete;
+        $removal_stats{news_items}++;
+        print "${GREEN}  ✓${RESET} Removed news item: ${CYAN}'$title'${RESET}\n";
+        print "    URL: ${YELLOW}$url_title${RESET}, ID: ${YELLOW}$item_id${RESET}\n";
+    }
+};
+if ($@) {
+    print "${RED}  ✗${RESET} Error removing news items: $@\n";
+}
+
+if ($removal_stats{news_items} == 0) {
+    print "${YELLOW}  ⚠${RESET} No news items found to remove\n";
+}
+
+# ============================================
+# STEP 6: Remove User Roles
+# ============================================
+print "\n${CYAN}[STEP 6/8]${RESET} Removing user roles...\n";
+
+eval {
+    # Find the trevor user
+    my $user = $schema->resultset('User')->find({ username => 'trevor' });
+    
+    if ($user) {
+        my @user_roles = $user->user_roles->all;
+        foreach my $user_role (@user_roles) {
+            my $role_id = $user_role->role;
+            $user_role->delete;
+            $removal_stats{user_roles}++;
+            print "${GREEN}  ✓${RESET} Removed user role for user 'trevor' (Role ID: ${YELLOW}$role_id${RESET})\n";
+        }
+    }
+};
+if ($@) {
+    print "${RED}  ✗${RESET} Error removing user roles: $@\n";
+}
+
+if ($removal_stats{user_roles} == 0) {
+    print "${YELLOW}  ⚠${RESET} No user roles found to remove\n";
+}
+
+# ============================================
+# STEP 7: Remove Roles
+# ============================================
+print "\n${CYAN}[STEP 7/8]${RESET} Removing roles...\n";
+
+eval {
+    my $role = $schema->resultset('Role')->find({ role => 'News Admin' });
+    
+    if ($role) {
+        my $role_name = $role->role;
+        my $role_id = $role->id;
+        
+        # Check if role is still in use
+        my $role_usage = $schema->resultset('UserRole')->search({ role => $role_id })->count;
+        
+        if ($role_usage == 0) {
+            $role->delete;
+            $removal_stats{roles}++;
+            print "${GREEN}  ✓${RESET} Removed role: ${CYAN}'$role_name'${RESET} (ID: ${YELLOW}$role_id${RESET})\n";
+        } else {
+            print "${YELLOW}  ⚠${RESET} Role '$role_name' still in use by $role_usage user(s)\n";
+        }
+    }
+};
+if ($@) {
+    print "${RED}  ✗${RESET} Error removing roles: $@\n";
+}
+
+if ($removal_stats{roles} == 0) {
+    print "${YELLOW}  ⚠${RESET} No roles found to remove (or still in use)\n";
+}
+
+# ============================================
+# STEP 8: Remove User
+# ============================================
+print "\n${CYAN}[STEP 8/8]${RESET} Removing user...\n";
+
+eval {
+    my $user = $schema->resultset('User')->find({ username => 'trevor' });
+    
+    if ($user) {
+        my $username = $user->username;
+        my $user_id = $user->id;
+        my $email = $user->email;
+        
+        # Check for any remaining news items
+        my $news_count = $user->news_items->count;
+        
+        if ($news_count == 0) {
+            $user->delete;
+            $removal_stats{users}++;
+            print "${GREEN}  ✓${RESET} Removed user: ${CYAN}'$username'${RESET}\n";
+            print "    ID: ${YELLOW}$user_id${RESET}, Email: ${YELLOW}$email${RESET}\n";
+        } else {
+            print "${YELLOW}  ⚠${RESET} User '$username' still has $news_count news item(s)\n";
+        }
+    } else {
+        print "${YELLOW}  ⚠${RESET} User 'trevor' not found\n";
+    }
+};
+if ($@) {
+    print "${RED}  ✗${RESET} Error removing user: $@\n";
+}
+
+# ============================================
+# Summary
+# ============================================
+print "\n${MAGENTA}===========================================${RESET}\n";
+print "${MAGENTA}            REMOVAL SUMMARY                ${RESET}\n";
+print "${MAGENTA}===========================================${RESET}\n\n";
+
+$total_removed = 0;
+foreach my $key (keys %removal_stats) {
+    $total_removed += $removal_stats{$key};
+}
+
+if ($total_removed > 0) {
+    print "${GREEN}[SUCCESS]${RESET} Removal operation completed\n\n";
+    
+    print "${BLUE}Removal Statistics:${RESET}\n";
+    print "  Comments:     ${YELLOW}" . sprintf("%3d", $removal_stats{comments}) . "${RESET}\n";
+    print "  Discussions:  ${YELLOW}" . sprintf("%3d", $removal_stats{discussions}) . "${RESET}\n";
+    print "  Tags:         ${YELLOW}" . sprintf("%3d", $removal_stats{tags}) . "${RESET}\n";
+    print "  Tagsets:      ${YELLOW}" . sprintf("%3d", $removal_stats{tagsets}) . "${RESET}\n";
+    print "  News Items:   ${YELLOW}" . sprintf("%3d", $removal_stats{news_items}) . "${RESET}\n";
+    print "  User Roles:   ${YELLOW}" . sprintf("%3d", $removal_stats{user_roles}) . "${RESET}\n";
+    print "  Roles:        ${YELLOW}" . sprintf("%3d", $removal_stats{roles}) . "${RESET}\n";
+    print "  Users:        ${YELLOW}" . sprintf("%3d", $removal_stats{users}) . "${RESET}\n";
+    print "  ${CYAN}─────────────────${RESET}\n";
+    print "  Total:        ${GREEN}" . sprintf("%3d", $total_removed) . "${RESET}\n";
+    
+    if (@news_items_removed) {
+        print "\n${BLUE}News Items Removed:${RESET}\n";
+        foreach my $item (@news_items_removed) {
+            print "  - ${CYAN}" . $item->{title} . "${RESET} (ID: " . $item->{id} . ")\n";
+        }
+    }
+} else {
+    print "${YELLOW}[WARNING]${RESET} No data was removed\n";
+    print "${YELLOW}[INFO]${RESET} The news demo data may have already been removed\n";
+}
+
+print "\n${GREEN}[COMPLETE]${RESET} News data removal finished\n";

@@ -16,6 +16,13 @@ use warnings;
 use Test::More;
 use Test::WWW::Mechanize::Catalyst::WithContext;
 
+# KBAKER 20251017: import program for managing database demo data
+use lib 't/support';
+require 'database_helper.pl';
+
+insert_pages_demo_data();
+
+
 my $t = Test::WWW::Mechanize::Catalyst::WithContext->new( catalyst_app => 'ShinyCMS' );
 
 # Hand-munged URLs get sent somewhere sensible

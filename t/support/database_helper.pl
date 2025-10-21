@@ -99,3 +99,35 @@ sub verify_blog_cleanup() {
     system($^X, $target_script) == 0
         or die "Failed to run $target_script: $?";
 }
+
+# KBAKER 20251017: run program that inserts pages demo data
+sub insert_pages_demo_data() {
+    my $target_script = File::Spec->catfile($repo_root, 'bin', 'database', 'data', 'insert-pages-demo-data');
+
+    system($^X, $target_script) == 0
+        or die "Failed to run $target_script: $?";
+}
+
+# KBAKER 20251017: run program that inserts news demo data
+sub insert_news_demo_data() {
+    my $target_script = File::Spec->catfile($repo_root, 'bin', 'database', 'data', 'insert-news-demo-data');
+
+    system($^X, $target_script) == 0
+        or die "Failed to run $target_script: $?";
+}
+
+# KBAKER 20251017: run program that deletes news demo data
+sub delete_news_demo_data() {
+    my $target_script = File::Spec->catfile($repo_root, 'bin', 'database', 'data', 'delete-news-demo-data');
+
+    system($^X, $target_script) == 0
+        or die "Failed to run $target_script: $?";
+}
+
+# KBAKER 2021010: run program that verifies deletion of news demo data
+sub verify_news_cleanup() {
+    my $target_script = File::Spec->catfile($repo_root, 'bin', 'database', 'data', 'verify-news-cleanup');
+
+    system($^X, $target_script) == 0
+        or die "Failed to run $target_script: $?";
+}

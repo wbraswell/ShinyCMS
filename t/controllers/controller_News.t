@@ -13,10 +13,17 @@
 use strict;
 use warnings;
 
+# KBAKER 20251017: import program for managing database demo data
+use lib 't/support';
+require 'database_helper.pl';
+
 use Test::More;
 use Test::WWW::Mechanize::Catalyst::WithContext;
 
 my $t = Test::WWW::Mechanize::Catalyst::WithContext->new( catalyst_app => 'ShinyCMS' );
+
+# KBAKER 20251021: insert demo data to run tests
+insert_news_demo_data();
 
 # Posts
 $t->get_ok(
@@ -119,5 +126,9 @@ ok(
 	$returns_undef && $no_results,
 	"search() without param('search') set returns undef & stashes no results"
 );
+
+# KBAKER 20251021: delete and verify deletion of news demo data
+delete_news_demo_data();
+verify_news_cleanup();
 
 done_testing();
