@@ -1,0 +1,153 @@
+#!/usr/bin/env perl
+
+# ===================================================================
+# File:     delete-poll-demo-data.pl
+# Purpose:  Remove poll demo data in reverse order with ANSI colors
+#
+# Author:	Kai Baker <eigenspaces@gmail.com>
+#
+# ShinyCMS is free software; you can redistribute it and/or modify it
+# under the terms of either the GPL 2.0 or the Artistic License 2.0
+# ===================================================================
+
+use strict;
+use warnings;
+use English;
+use Term::ANSIColor;
+
+# ANSI color codes for better readability
+my $GREEN  = color('green');
+my $YELLOW = color('yellow');
+my $RED    = color('red');
+my $CYAN   = color('cyan');
+my $MAGENTA = color('magenta');
+my $BLUE   = color('blue');
+my $RESET  = color('reset');
+
+# Load local helper lib and get connected schema object
+use FindBin qw( $Bin );
+use lib "$Bin/../../lib";
+
+# Check if we can load the helper module
+require 'helpers.pl';
+
+if ($EVAL_ERROR) {
+    print "${RED}[ERROR]${RESET} Cannot load helpers.pl: $EVAL_ERROR\n";
+    print "${YELLOW}[INFO]${RESET} Make sure helpers.pl is in the lib directory\n";
+    exit 1;
+}
+
+print "${MAGENTA}===========================================${RESET}\n";
+print "${MAGENTA}      News Data Removal Script             ${RESET}\n";
+print "${MAGENTA}===========================================${RESET}\n\n";
+
+# Get schema connection
+my $schema;
+eval {
+    $schema = get_schema();
+};
+if ($EVAL_ERROR) {
+    print "${RED}[ERROR]${RESET} Failed to get database schema: $EVAL_ERROR\n";
+    exit 1;
+}
+
+print "${GREEN}[OK]${RESET} Database connection established\n\n";
+
+my $total_removed = 0;
+my %removal_stats = (
+    questions     => 0,
+    answers       => 0,
+);
+
+my $poll = $schema->resultset( 'PollQuestion' )->find({ 
+    question => 'Poll goes where?' 
+});
+
+# ============================================
+# STEP 1: Remove Poll Answers
+# ============================================
+print "${CYAN}[STEP 1/2]${RESET} Removing answers...\n";
+
+eval {
+
+    if ( $poll ) {
+        # Get all answers and delete them one by one
+        my @answers = $poll->poll_answers->search(
+            {},
+            { order_by => { -desc => 'id' } }
+        )->all;
+        foreach my $answer ( @answers ) {
+            my $answer_id = $answer->id;
+            $answer->delete;
+            $removal_stats{answers}++;
+            print "${GREEN}  ✓${RESET} Removed answer ID: ${YELLOW}$answer_id${RESET}\n";
+        }
+    }
+};
+
+if ($EVAL_ERROR) {
+    print "${RED}  ✗${RESET} Error removing answers: $EVAL_ERROR\n";
+}
+
+if ($removal_stats{answers} == 0) {
+    print "${YELLOW}  ⚠${RESET} No answers found to remove\n";
+}
+
+# ============================================
+# STEP 2: Remove Poll Question
+# ============================================
+my @polls_removed;
+print "${CYAN}[STEP 2/2]${RESET} Removing poll question...\n";
+
+eval {
+    if( $poll ) {
+        my $poll_id = $poll->id;
+        my $question => $poll->question;
+        push @polls_removed, {question => $question, id => $poll_id };
+        $poll->delete;
+        $removal_stats{questions}++;
+        print "${GREEN}  ✓${RESET} Removed question ID: ${YELLOW}$poll_id${RESET}\n";
+    }
+};
+
+if ($EVAL_ERROR) {
+    print "${RED}  ✗${RESET} Error removing questions: $EVAL_ERROR\n";
+}
+
+if ($removal_stats{questions} == 0) {
+    print "${YELLOW}  ⚠${RESET} No questions found to remove\n";
+}
+
+# ============================================
+# Summary
+# ============================================
+print "\n${MAGENTA}===========================================${RESET}\n";
+print "${MAGENTA}            REMOVAL SUMMARY                ${RESET}\n";
+print "${MAGENTA}===========================================${RESET}\n\n";
+
+$total_removed = 0;
+foreach my $key (keys %removal_stats) {
+    $total_removed += $removal_stats{$key};
+}
+
+if ($total_removed > 0) {
+    print "${GREEN}[SUCCESS]${RESET} Removal operation completed\n\n";
+    
+    print "${BLUE}Removal Statistics:${RESET}\n";
+    print "  Answers:     ${YELLOW}" . sprintf("%3d", $removal_stats{answers}) . "${RESET}\n";
+    print "  Questions:  ${YELLOW}" . sprintf("%3d", $removal_stats{questions}) . "${RESET}\n";
+    print "  ${CYAN}─────────────────${RESET}\n";
+    print "  Total:        ${GREEN}" . sprintf("%3d", $total_removed) . "${RESET}\n";
+    
+    if (@polls_removed) {
+        print "\n${BLUE}Poll Items Removed:${RESET}\n";
+        foreach my $item (@polls_removed) {
+            print "  - ${CYAN}" . $item->{question} . "${RESET} (ID: " . $item->{id} . ")\n";
+        }
+    }
+} else {
+    print "${YELLOW}[WARNING]${RESET} No data was removed\n";
+    print "${YELLOW}[INFO]${RESET} The poll demo data may have already been removed\n";
+}
+
+print "\n${GREEN}[COMPLETE]${RESET} Poll data removal finished\n";

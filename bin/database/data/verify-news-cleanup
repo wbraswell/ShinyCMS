@@ -13,6 +13,8 @@
 use strict;
 use warnings;
 use Term::ANSIColor;
+# KBAKER 20251028: replace punctuation variables with English equivalents, such as $@ being replaced by $EVAL_ERROR throughout this file
+use English;
 
 # ANSI color codes for better readability
 my $GREEN  = color('green');
@@ -31,8 +33,8 @@ use lib "$Bin/../../lib";
 # Check if we can load the helper module
 require 'helpers.pl';
 
-if ($@) {
-    print "${RED}[ERROR]${RESET} Cannot load helpers.pl: $@\n";
+if ($EVAL_ERROR) {
+    print "${RED}[ERROR]${RESET} Cannot load helpers.pl: $EVAL_ERROR\n";
     print "${YELLOW}[INFO]${RESET} Make sure helpers.pl is in the lib directory\n";
     exit 1;
 }
@@ -46,8 +48,8 @@ my $schema;
 eval {
     $schema = get_schema();
 };
-if ($@) {
-    print "${RED}[ERROR]${RESET} Failed to get database schema: $@\n";
+if ($EVAL_ERROR) {
+    print "${RED}[ERROR]${RESET} Failed to get database schema: $EVAL_ERROR\n";
     exit 1;
 }
 
@@ -68,8 +70,8 @@ eval {
     $demo_user = $schema->resultset('User')->find({ username => 'trevor' });
 };
 
-if ($@) {
-    print "${RED}  ✗${RESET} Error checking for user: $@\n";
+if ($EVAL_ERROR) {
+    print "${RED}  ✗${RESET} Error checking for user: $EVAL_ERROR\n";
 } elsif ($demo_user) {
     print "${YELLOW}  ⚠${RESET} Demo user 'trevor' still exists\n";
     print "    - ID: ${YELLOW}" . $demo_user->id . "${RESET}\n";
@@ -117,8 +119,8 @@ eval {
         $verification_stats{roles} = 0;
     }
 };
-if ($@) {
-    print "${RED}  ✗${RESET} Error checking roles: $@\n";
+if ($EVAL_ERROR) {
+    print "${RED}  ✗${RESET} Error checking roles: $EVAL_ERROR\n";
 }
 
 # ============================================
@@ -132,8 +134,8 @@ eval {
     $verification_stats{news_items} = scalar(@news_items);
 };
 
-if ($@) {
-    print "${RED}  ✗${RESET} Error checking news items: $@\n";
+if ($EVAL_ERROR) {
+    print "${RED}  ✗${RESET} Error checking news items: $EVAL_ERROR\n";
 } elsif (@news_items) {
     print "${RED}  ✗${RESET} Found " . scalar(@news_items) . " news item(s) still in database:\n";
     
@@ -199,8 +201,8 @@ eval {
         print "${GREEN}  ✓${RESET} No NewsItem discussions found (clean)\n";
     }
 };
-if ($@) {
-    print "${RED}  ✗${RESET} Error checking discussions: $@\n";
+if ($EVAL_ERROR) {
+    print "${RED}  ✗${RESET} Error checking discussions: $EVAL_ERROR\n";
 }
 
 # ============================================
@@ -243,8 +245,8 @@ eval {
         print "${GREEN}  ✓${RESET} No comments found in NewsItem discussions (clean)\n";
     }
 };
-if ($@) {
-    print "${RED}  ✗${RESET} Error checking comments: $@\n";
+if ($EVAL_ERROR) {
+    print "${RED}  ✗${RESET} Error checking comments: $EVAL_ERROR\n";
 }
 
 # ============================================
@@ -293,8 +295,8 @@ eval {
         print "${GREEN}  ✓${RESET} No NewsItem tagsets found (clean)\n";
     }
 };
-if ($@) {
-    print "${RED}  ✗${RESET} Error checking tagsets: $@\n";
+if ($EVAL_ERROR) {
+    print "${RED}  ✗${RESET} Error checking tagsets: $EVAL_ERROR\n";
 }
 
 # ============================================
@@ -330,8 +332,8 @@ eval {
         print "${GREEN}  ✓${RESET} No tags found in NewsItem tagsets (clean)\n";
     }
 };
-if ($@) {
-    print "${RED}  ✗${RESET} Error checking tags: $@\n";
+if ($EVAL_ERROR) {
+    print "${RED}  ✗${RESET} Error checking tags: $EVAL_ERROR\n";
 }
 
 # ============================================
@@ -364,8 +366,8 @@ eval {
         $verification_stats{user_roles} = 0;
     }
 };
-if ($@) {
-    print "${RED}  ✗${RESET} Error checking user roles: $@\n";
+if ($EVAL_ERROR) {
+    print "${RED}  ✗${RESET} Error checking user roles: $EVAL_ERROR\n";
 }
 
 # ============================================

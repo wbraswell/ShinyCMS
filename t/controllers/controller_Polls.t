@@ -19,6 +19,11 @@ use Test::WWW::Mechanize::Catalyst::WithContext;
 use lib 't/support';
 require 'login_helpers.pl';  ## no critic
 
+# KBAKER 20251024: import program for managing database demo data
+require 'database_helper.pl';
+
+insert_poll_demo_data();
+
 my $t = Test::WWW::Mechanize::Catalyst::WithContext->new( catalyst_app => 'ShinyCMS' );
 
 # Look at the polls
@@ -150,5 +155,8 @@ $user2->poll_user_votes->delete;
 $user1->poll_user_votes->delete;
 remove_test_user( $user2 );
 remove_test_user( $user1 );
+
+# KBAKER 20251024: delete and verify deletion of poll demo data
+delete_poll_demo_data();
 
 done_testing();

@@ -13,6 +13,8 @@
 use strict;
 use warnings;
 use Term::ANSIColor;
+# KBAKER 20251028: replace punctuation variables with English equivalents, such as $@ being replaced by $EVAL_ERROR throughout this file
+use English;
 
 # ANSI color codes for better readability
 my $GREEN  = color('green');
@@ -30,8 +32,8 @@ use lib "$Bin/../../lib";
 # Check if we can load the helper module
 require 'helpers.pl';
 
-if ($@) {
-    print "${RED}[ERROR]${RESET} Cannot load helpers.pl: $@\n";
+if ($EVAL_ERROR) {
+    print "${RED}[ERROR]${RESET} Cannot load helpers.pl: $EVAL_ERROR\n";
     print "${YELLOW}[INFO]${RESET} Make sure helpers.pl is in the lib directory\n";
     exit 1;
 }
@@ -45,8 +47,8 @@ my $schema;
 eval {
     $schema = get_schema();
 };
-if ($@) {
-    print "${RED}[ERROR]${RESET} Failed to get database schema: $@\n";
+if ($EVAL_ERROR) {
+    print "${RED}[ERROR]${RESET} Failed to get database schema: $EVAL_ERROR\n";
     exit 1;
 }
 
@@ -90,8 +92,8 @@ eval {
         }
     }
 };
-if ($@) {
-    print "${RED}  ✗${RESET} Error removing comments: $@\n";
+if ($EVAL_ERROR) {
+    print "${RED}  ✗${RESET} Error removing comments: $EVAL_ERROR\n";
 }
 
 if ($removal_stats{comments} == 0) {
@@ -118,8 +120,8 @@ eval {
         print "${GREEN}  ✓${RESET} Removed discussion ID: ${YELLOW}$disc_id${RESET} (NewsItem: $resource_id)\n";
     }
 };
-if ($@) {
-    print "${RED}  ✗${RESET} Error removing discussions: $@\n";
+if ($EVAL_ERROR) {
+    print "${RED}  ✗${RESET} Error removing discussions: $EVAL_ERROR\n";
 }
 
 if ($removal_stats{discussions} == 0) {
@@ -153,8 +155,8 @@ eval {
         }
     }
 };
-if ($@) {
-    print "${RED}  ✗${RESET} Error removing tags: $@\n";
+if ($EVAL_ERROR) {
+    print "${RED}  ✗${RESET} Error removing tags: $EVAL_ERROR\n";
 }
 
 if ($removal_stats{tags} == 0) {
@@ -182,8 +184,8 @@ eval {
         print "${GREEN}  ✓${RESET} Removed tagset ID: ${YELLOW}$tagset_id${RESET} (NewsItem: $resource_id)\n";
     }
 };
-if ($@) {
-    print "${RED}  ✗${RESET} Error removing tagsets: $@\n";
+if ($EVAL_ERROR) {
+    print "${RED}  ✗${RESET} Error removing tagsets: $EVAL_ERROR\n";
 }
 
 if ($removal_stats{tagsets} == 0) {
@@ -216,8 +218,8 @@ eval {
         print "    URL: ${YELLOW}$url_title${RESET}, ID: ${YELLOW}$item_id${RESET}\n";
     }
 };
-if ($@) {
-    print "${RED}  ✗${RESET} Error removing news items: $@\n";
+if ($EVAL_ERROR) {
+    print "${RED}  ✗${RESET} Error removing news items: $EVAL_ERROR\n";
 }
 
 if ($removal_stats{news_items} == 0) {
@@ -243,8 +245,8 @@ eval {
         }
     }
 };
-if ($@) {
-    print "${RED}  ✗${RESET} Error removing user roles: $@\n";
+if ($EVAL_ERROR) {
+    print "${RED}  ✗${RESET} Error removing user roles: $EVAL_ERROR\n";
 }
 
 if ($removal_stats{user_roles} == 0) {
@@ -275,8 +277,8 @@ eval {
         }
     }
 };
-if ($@) {
-    print "${RED}  ✗${RESET} Error removing roles: $@\n";
+if ($EVAL_ERROR) {
+    print "${RED}  ✗${RESET} Error removing roles: $EVAL_ERROR\n";
 }
 
 if ($removal_stats{roles} == 0) {
@@ -311,8 +313,8 @@ eval {
         print "${YELLOW}  ⚠${RESET} User 'trevor' not found\n";
     }
 };
-if ($@) {
-    print "${RED}  ✗${RESET} Error removing user: $@\n";
+if ($EVAL_ERROR) {
+    print "${RED}  ✗${RESET} Error removing user: $EVAL_ERROR\n";
 }
 
 # ============================================

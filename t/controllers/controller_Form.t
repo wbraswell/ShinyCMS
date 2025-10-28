@@ -12,6 +12,13 @@
 
 use strict;
 use warnings;
+# KBAKER 20251028: set the test environmental variable to 1 so ShinyCMS will use Catalyst::Plugin::ConfigLoader
+# and thereby trigger merging of 'config/shinycms_test.conf' with 'config/shinycms.conf'
+use Test::More;
+
+BEGIN {
+    $ENV{SHINYCMS_TEST} = 1;
+}
 
 use Test::More;
 use Test::WWW::Mechanize::Catalyst::WithContext;
@@ -31,7 +38,9 @@ $t->get_ok(
 	'Try to load /form directly'
 );
 $t->title_is(
-	'Home - ShinySite',
+	# KBAKER 20251024: the test initially expected the 'Home - ShinySite' title on the site homepage;
+	# the homepage title has since been changed to the line below:
+	'About ShinyCMS - ShinySite',
 	'Attempting to visit /form directly gets redirected to site homepage'
 );
 # Fetch and submit both types of form (HTML / plain text)
@@ -111,7 +120,9 @@ $t->post_ok(
 	'Submitted second contact form without name'
 );
 $t->title_is(
-	'Home - ShinySite',
+	# KBAKER 20251024: the test initially expected the 'Home - ShinySite' title on the site homepage;
+	# the homepage title has since been changed to the line below:
+	'About ShinyCMS - ShinySite',
 	"Redirected back to homepage after submitting second contact form"
 );
 $t->post_ok(

@@ -1,0 +1,124 @@
+#!/usr/bin/env perl
+
+# ===================================================================
+# File:     verify-poll-cleanup.pl
+# Purpose:  Verify no orphaned poll-related data remains
+#
+# Author:	Kai Baker <eigenspaces@gmail.com>
+#
+# ShinyCMS is free software; you can redistribute it and/or modify it
+# under the terms of either the GPL 2.0 or the Artistic License 2.0
+# ===================================================================
+
+use strict;
+use warnings;
+use Term::ANSIColor;
+use English;
+
+# ANSI color codes for better readability
+my $GREEN  = color('green');
+my $YELLOW = color('yellow');
+my $RED    = color('red');
+my $CYAN   = color('cyan');
+my $MAGENTA = color('magenta');
+my $BLUE   = color('blue');
+my $BOLD   = color('bold');
+my $RESET  = color('reset');
+
+# Load local helper lib and get connected schema object
+use FindBin qw( $Bin );
+use lib "$Bin/../../lib";
+
+# Check if we can load the helper module
+require 'helpers.pl';
+
+if ($EVAL_ERROR) {
+    print "${RED}[ERROR]${RESET} Cannot load helpers.pl: $EVAL_ERROR\n";
+    print "${YELLOW}[INFO]${RESET} Make sure helpers.pl is in the lib directory\n";
+    exit 1;
+}
+
+print "${BLUE}===========================================${RESET}\n";
+print "${BLUE}    Poll Data Verification Script          ${RESET}\n";
+print "${BLUE}===========================================${RESET}\n\n";
+
+# Get schema connection
+my $schema;
+eval {
+    $schema = get_schema();
+};
+if ($EVAL_ERROR) {
+    print "${RED}[ERROR]${RESET} Failed to get database schema: $EVAL_ERROR\n";
+    exit 1;
+}
+
+print "${GREEN}[OK]${RESET} Database connection established\n\n";
+# Track orphaned data
+my $orphaned_data_found = 0;
+my @orphan_reports;
+my %verification_stats;
+
+# ============================================
+# 1. Check polls answers
+# ============================================
+
+print "${CYAN}[1/2] Checking for demo answers...${RESET}\n";
+
+my @demo_answers;
+eval {
+    @demo_answers = $schema->resultset('PollAnswer')->all;
+    $verification_stats{answers} = scalar(@demo_answers);
+};
+
+if($EVAL_ERROR) {
+     print "${RED}  ✗${RESET} Error checking poll items: $EVAL_ERROR\n";
+} else if(@poll_answers) {
+    print "${RED}  ✗${RESET} Found " . scalar(@news_items) . " news item(s) still in database:\n";
+
+    my $demo_items = 0;
+    foreach my $item (@poll_answers) {
+        $demo_items++;
+        print "    - ${CYAN}" . substr($item->answer, 0, 50) . 
+              (length($item->title) > 50 ? "..." : "") . "${RESET}\n";
+        print "      ID: ${YELLOW}" . $item->id . "${RESET}";
+        print "\n";
+    }
+
+    if($demo_items > 0) {
+        push @orphan_reports, "$demo_items demo poll item(s) found";
+    }
+    $orphaned_data_found = 1;
+} else {
+    print "${GREEN}  ✓${RESET} No poll items found (clean)\n";
+}
+
+# ============================================
+# 4. Check for Orphaned Questions
+# ============================================
+print "\n${CYAN}[2/2] Checking for orphaned questions...${RESET}\n";
+
+my @poll_questions;
+eval {
+    my @poll_questions = $schema->resultset('PollQuestion')->all;
+    $verification_stats{questions} = scalar(@poll_questions);
+}
+
+if(@poll_questions) {
+    print "${YELLOW}  ⚠${RESET} Found " . scalar(@poll_questions) . " Poll question(s):\n";
+
+    my $demo_items = 0;
+    foreach my $item (@poll_questions) {
+        $demo_items++;
+        print "    - ${CYAN}" . substr($item->question, 0, 50) . 
+            (length($item->title) > 50 ? "..." : "") . "${RESET}\n";
+        print "      ID: ${YELLOW}" . $item->id . "${RESET}";
+        print "\n";
+    }
+
+    if($demo_items > 0) {
+        push @orphan_reports, "$demo_items demo poll item(s) found";
+    }
+$orphaned_data_found = 1;
+} else {
+    print "${GREEN}  ✓${RESET} No poll items found (clean)\n";
+}
