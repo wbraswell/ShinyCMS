@@ -1,0 +1,50 @@
+#!/usr/bin/env perl
+
+# ===================================================================
+# File:		bin/database/verify-forum-cleanup
+# Purpose:	Verify that all pages demo data has been removed
+# 
+# This script checks that all pages-related demo data has been
+# successfully deleted from the database, with color-coded output.
+# Author:	Kai Baker <eigenspaces@gmail.com>
+# 
+# ShinyCMS is free software; you can redistribute it and/or modify it
+# under the terms of either the GPL 2.0 or the Artistic License 2.0
+# ===================================================================
+
+use strict;
+use warnings;
+
+# CPAN modules
+use Term::ANSIColor qw(:constants);
+use DateTime::Duration;
+
+# Load local helper lib and get connected schema object
+use FindBin qw( $Bin );
+use lib "$Bin/../../lib";
+require 'helpers.pl';
+
+my $schema = get_schema();
+
+# Initialize counters
+my $items_found = 0;
+my $items_removed = 0;
+my $total_checks = 0;
+
+# ANSI color codes
+my $RESET = RESET;
+my $GREEN = GREEN;
+my $RED = RED;
+my $YELLOW = YELLOW;
+my $CYAN = CYAN;
+my $BOLD = BOLD;
+my $DIM = FAINT;
+
+print "${BLUE}===========================================${RESET}\n";
+print "${BLUE}    Pages Data Verification Script          ${RESET}\n";
+print "${BLUE}===========================================${RESET}\n\n";
+
+print "${BOLD}${CYAN}=" x 70 . "${RESET}\n";
+print "${BOLD}${CYAN}PAGES DATA CLEANUP VERIFICATION${RESET}\n";
+print "${CYAN}=" x 70 . "${RESET}\n\n";
+print "Checking that all pages demo data has been removed from the database...\n\n";

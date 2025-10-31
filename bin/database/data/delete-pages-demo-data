@@ -1,0 +1,202 @@
+#!/usr/bin/env perl
+
+# ===================================================================
+# File:     remove-pages-demo-data.pl
+# Purpose:  Remove pages demo data in reverse order with ANSI colors
+#
+# Author:	Kai Baker <eigenspaces@gmail.com>
+#
+# ShinyCMS is free software; you can redistribute it and/or modify it
+# under the terms of either the GPL 2.0 or the Artistic License 2.0
+# ===================================================================
+
+use strict;
+use warnings;
+use Term::ANSIColor;
+use English;
+
+# ANSI color codes for better readability
+my $GREEN  = color('green');
+my $YELLOW = color('yellow');
+my $RED    = color('red');
+my $CYAN   = color('cyan');
+my $MAGENTA = color('magenta');
+my $BLUE   = color('blue');
+my $RESET  = color('reset');
+
+# Load local helper lib and get connected schema object
+use FindBin qw( $Bin );
+use lib "$Bin/../../lib";
+
+eval {
+    # Check if we can load the helper module
+    require 'helpers.pl';
+};
+
+if ($EVAL_ERROR) {
+    print "${RED}[ERROR]${RESET} Cannot load helpers.pl: $EVAL_ERROR\n";
+    print "${YELLOW}[INFO]${RESET} Make sure helpers.pl is in the lib directory\n";
+    exit 1;
+}
+
+print "${MAGENTA}===========================================${RESET}\n";
+print "${MAGENTA}      Pages Data Removal Script             ${RESET}\n";
+print "${MAGENTA}===========================================${RESET}\n\n";
+
+# Get schema connection
+my $schema;
+eval {
+    $schema = get_schema();
+};
+if ($EVAL_ERROR) {
+    print "${RED}[ERROR]${RESET} Failed to get database schema: $EVAL_ERROR\n";
+    exit 1;
+}
+
+print "${GREEN}[OK]${RESET} Database connection established\n\n";
+
+# Track removal statistics
+my $total_removed = 0;
+my %removal_stats = (
+    cms_forms           => 0,
+    cms_page_elem       => 0,
+    cms_page            => 0,
+    cms_section         => 0,
+    cms_template_elem   => 0,
+    cms_template        => 0,
+);
+
+# deletion order: CmsForm->CmsPageElement->CmsPage->CmsSection->CmsTemplateElement->CmsTemplate
+
+# ============================================
+# STEP 1: Remove CmsForms
+# ============================================
+print "${CYAN}[STEP 1/6]${RESET} Removing CmsForms...\n";
+
+eval {
+    my @form_names = ('Contact Form', 'Contact Form (sends HTML email)');
+    foreach my $name (@form_names) {
+        my $form = $schema->resultset('CmsForm')->find({ name => $name });
+        if ($form) {
+            my $form_id = $form->id;
+            $form->delete;
+            $removal_stats{cms_forms}++;
+            print "${GREEN}  ✓${RESET} Removed form ID: ${YELLOW}$form_id${RESET}\n";
+        }
+    }
+};
+
+if ($EVAL_ERROR) {
+    print "${RED}  ✗${RESET} Error removing CmsForms: $EVAL_ERROR\n";
+}
+
+if ($removal_stats{cms_forms} == 0) {
+    print "${YELLOW}  ⚠${RESET} No CmsForms found to remove\n";
+}
+
+# ============================================
+# STEP 2: Remove CmsPageElement
+# ============================================
+print "${CYAN}[STEP 2/6]${RESET} Removing CmsPageElement...\n";
+
+# Step 1: Delete CmsPageElements
+my @page_names = ('Home', 'About ShinyCMS', 'Feature List', 'Contact Us');
+eval {
+    foreach my $name (@page_names) {
+        my $page = $schema->resultset('CmsPage')->find({ name => $name });
+        if ($page) {
+            my @elements = $page->cms_page_elements->all;
+            foreach my $element (@elements) {
+                my $element_id = $element->id;
+                $element->delete;
+                $removal_stats{cms_page_elem}++;
+                print "${GREEN}  ✓${RESET} Removed page element ID: ${YELLOW}$element_id${RESET}\n";
+            }
+        }
+    }
+};
+
+if ($EVAL_ERROR) {
+    print "${RED}  ✗${RESET} Error removing CmsPageElements: $EVAL_ERROR\n";
+}
+
+if ($removal_stats{cms_page_elem} == 0) {
+    print "${YELLOW}  ⚠${RESET} No CmsPageElements found to remove\n";
+}
+
+# ============================================
+# STEP 3: Remove CmsPages
+# ============================================
+print "${CYAN}[STEP 3/6]${RESET} Removing CmsPages...\n";
+
+eval {
+    foreach my $name (@page_names) {
+        my $page = $schema->resultset('CmsPage')->find({ name => $name });
+        if ($page) {
+            my $page_id = $page->id;
+            $page->delete;
+            $removal_stats{cms_page}++;
+            print "${GREEN}  ✓${RESET} Removed page ID: ${YELLOW}$page_id${RESET}\n";
+        }
+    }
+};
+
+if ($EVAL_ERROR) {
+    print "${RED}  ✗${RESET} Error removing CmsPages: $EVAL_ERROR\n";
+}
+
+if ($removal_stats{cms_page} == 0) {
+    print "${YELLOW}  ⚠${RESET} No CmsPages found to remove\n";
+}
+
+# ============================================
+# STEP 4: Remove CmsSection
+# ============================================
+print "${CYAN}[STEP 4/6]${RESET} Removing CmsSection...\n";
+
+eval {
+    my @cms_sections = ('Home', 'More')
+    foreach my $name (@cms_sections) {
+        my $section = $schema->resultset('CmsSection')->find({ name => $name });
+        if ($section) {
+            my $section_id = $section->id;
+            $section->delete;
+            $removal_stats{cms_section}++;
+            print "${GREEN}  ✓${RESET} Removed section ID: ${YELLOW}$section_id${RESET}\n";
+        }
+    }
+};
+
+if ($EVAL_ERROR) {
+    print "${RED}  ✗${RESET} Error removing CmsPages: $EVAL_ERROR\n";
+}
+
+if ($removal_stats{cms_section} == 0) {
+    print "${YELLOW}  ⚠${RESET} No CmsPages found to remove\n";
+}
+
+# ============================================
+# STEP 5: Remove CmsSection
+# ============================================
+print "${CYAN}[STEP 5/6]${RESET} Removing CmsSection...\n";
+
+eval {
+    my @cms_sections = ('Home', 'More')
+    foreach my $name (@cms_sections) {
+        my $section = $schema->resultset('CmsSection')->find({ name => $name });
+        if ($section) {
+            my $section_id = $section->id;
+            $section->delete;
+            $removal_stats{cms_section}++;
+            print "${GREEN}  ✓${RESET} Removed section ID: ${YELLOW}$section_id${RESET}\n";
+        }
+    }
+};
+
+if ($EVAL_ERROR) {
+    print "${RED}  ✗${RESET} Error removing CmsPages: $EVAL_ERROR\n";
+}
+
+if ($removal_stats{cms_section} == 0) {
+    print "${YELLOW}  ⚠${RESET} No CmsPages found to remove\n";
+}

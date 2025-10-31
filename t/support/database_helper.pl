@@ -108,6 +108,22 @@ sub insert_pages_demo_data() {
         or die "Failed to run $target_script: $?";
 }
 
+# KBAKER 20251031: run program that deletes pages demo data
+sub delete_pages_demo_data() {
+    my $target_script = File::Spec->catfile($repo_root, 'bin', 'database', 'data', 'insert-pages-demo-data');
+
+    system($^X, $target_script) == 0
+        or die "Failed to run $target_script: $?";
+}
+
+# KBAKER 20251031: run program that verifies deletion of pages demo data
+sub verify_pages_cleanup() {
+    my $target_script = File::Spec->catfile($repo_root, 'bin', 'database', 'data', 'insert-pages-demo-data');
+
+    system($^X, $target_script) == 0
+        or die "Failed to run $target_script: $?";
+}
+
 # KBAKER 20251017: run program that inserts news demo data
 sub insert_news_demo_data() {
     my $target_script = File::Spec->catfile($repo_root, 'bin', 'database', 'data', 'insert-news-demo-data');
@@ -143,6 +159,14 @@ sub insert_poll_demo_data() {
 # KBAKER 20251024: run program that deletes poll demo data
 sub delete_poll_demo_data() {
     my $target_script = File::Spec->catfile($repo_root, 'bin', 'database', 'data', 'delete-poll-demo-data');
+
+    system($^X, $target_script) == 0
+        or die "Failed to run $target_script: $?";
+}
+
+# KBAKER 20251031: run program that verifies deletion of poll demo data
+sub verify_poll_cleanup() {
+    my $target_script = File::Spec->catfile($repo_root, 'bin', 'database', 'data', 'verify-poll-cleanup');
 
     system($^X, $target_script) == 0
         or die "Failed to run $target_script: $?";

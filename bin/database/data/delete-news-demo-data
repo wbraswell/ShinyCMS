@@ -29,8 +29,11 @@ my $RESET  = color('reset');
 use FindBin qw( $Bin );
 use lib "$Bin/../../lib";
 
-# Check if we can load the helper module
-require 'helpers.pl';
+# KBAKER 20251031: add eval block around require statement to capture errors
+eval {
+    # Check if we can load the helper module
+    require 'helpers.pl';
+};
 
 if ($EVAL_ERROR) {
     print "${RED}[ERROR]${RESET} Cannot load helpers.pl: $EVAL_ERROR\n";

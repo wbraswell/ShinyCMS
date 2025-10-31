@@ -158,5 +158,6 @@ remove_test_user( $user1 );
 
 # KBAKER 20251024: delete and verify deletion of poll demo data
 delete_poll_demo_data();
+verify_poll_cleanup();
 
 done_testing();
