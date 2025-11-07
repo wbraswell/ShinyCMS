@@ -155,4 +155,8 @@ $t->text_contains(
 	'Got error message for trying to post form data to a non-existent form'
 );
 
+# KBAKER 20251107: delete and verify deletion of pages demo data
+delete_pages_demo_data();
+verify_pages_cleanup();
+
 done_testing();

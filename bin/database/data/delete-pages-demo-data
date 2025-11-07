@@ -65,6 +65,7 @@ my %removal_stats = (
     cms_template_elem   => 0,
     cms_template        => 0,
 );
+my @page_items_removed;
 
 # deletion order: CmsForm->CmsPageElement->CmsPage->CmsSection->CmsTemplateElement->CmsTemplate
 
@@ -134,6 +135,7 @@ eval {
         my $page = $schema->resultset('CmsPage')->find({ name => $name });
         if ($page) {
             my $page_id = $page->id;
+            push @page_items_removed, { title => $page->title, id => $page_id };
             $page->delete;
             $removal_stats{cms_page}++;
             print "${GREEN}  ✓${RESET} Removed page ID: ${YELLOW}$page_id${RESET}\n";
@@ -155,7 +157,7 @@ if ($removal_stats{cms_page} == 0) {
 print "${CYAN}[STEP 4/6]${RESET} Removing CmsSection...\n";
 
 eval {
-    my @cms_sections = ('Home', 'More')
+    my @cms_sections = ('Home', 'More');
     foreach my $name (@cms_sections) {
         my $section = $schema->resultset('CmsSection')->find({ name => $name });
         if ($section) {
@@ -168,35 +170,103 @@ eval {
 };
 
 if ($EVAL_ERROR) {
-    print "${RED}  ✗${RESET} Error removing CmsPages: $EVAL_ERROR\n";
+    print "${RED}  ✗${RESET} Error removing CmsSections: $EVAL_ERROR\n";
 }
 
 if ($removal_stats{cms_section} == 0) {
-    print "${YELLOW}  ⚠${RESET} No CmsPages found to remove\n";
+    print "${YELLOW}  ⚠${RESET} No CmsSections found to remove\n";
+}
+# KBAKER 20251107: delete CmsTemplateElement and record deletion statistics
+# ============================================
+# STEP 5: Remove CmsTemplateElement
+# ============================================
+print "${CYAN}[STEP 5/6]${RESET} Removing CmsTemplateElements...\n";
+
+my @template_names = ('Homepage', 'Subpage 1', 'Contact Form');
+eval {
+    foreach my $name (@template_names) {
+        my $templates = $schema->resultset('CmsTemplate')->find({ name => $name });
+        if ($templates) {
+            my @elements = $templates->cms_template_elements->all;
+            foreach my $element (@elements) {
+                my $element_id = $element->id;
+                $element->delete;
+                $removal_stats{cms_template_elem}++;
+                print "${GREEN}  ✓${RESET} Removed template element ID: ${YELLOW}$element_id${RESET}\n";
+            }
+        }
+    }
+};
+
+if ($EVAL_ERROR) {
+    print "${RED}  ✗${RESET} Error removing CmsTemplateElements: $EVAL_ERROR\n";
 }
 
+if ($removal_stats{cms_template_elem} == 0) {
+    print "${YELLOW}  ⚠${RESET} No CmsTemplateElements found to remove\n";
+}
+
+# KBAKER 20251107: delete CmsTemplate and record deletion statistics
 # ============================================
-# STEP 5: Remove CmsSection
+# STEP 6: Remove CmsTemplates
 # ============================================
-print "${CYAN}[STEP 5/6]${RESET} Removing CmsSection...\n";
+print "${CYAN}[STEP 6/6]${RESET} Removing CmsTemplates...\n";
 
 eval {
-    my @cms_sections = ('Home', 'More')
-    foreach my $name (@cms_sections) {
-        my $section = $schema->resultset('CmsSection')->find({ name => $name });
-        if ($section) {
-            my $section_id = $section->id;
-            $section->delete;
-            $removal_stats{cms_section}++;
-            print "${GREEN}  ✓${RESET} Removed section ID: ${YELLOW}$section_id${RESET}\n";
+    foreach my $name (@template_names) {
+        my $template = $schema->resultset('CmsTemplate')->find({ name => $name });
+        if ($template) {
+            my $template_id = $template->id;
+            $template->delete;
+            $removal_stats{cms_template}++;
+            print "${GREEN}  ✓${RESET} Removed template ID: ${YELLOW}$template_id${RESET}\n";
         }
     }
 };
 
 if ($EVAL_ERROR) {
-    print "${RED}  ✗${RESET} Error removing CmsPages: $EVAL_ERROR\n";
+    print "${RED}  ✗${RESET} Error removing CmsTemplates: $EVAL_ERROR\n";
 }
 
-if ($removal_stats{cms_section} == 0) {
-    print "${YELLOW}  ⚠${RESET} No CmsPages found to remove\n";
+if ($removal_stats{cms_template} == 0) {
+    print "${YELLOW}  ⚠${RESET} No CmsTemplates found to remove\n";
 }
+
+# KBAKER 20251107: deletion and statistics summary
+# ============================================
+# Summary
+# ============================================
+print "\n${MAGENTA}===========================================${RESET}\n";
+print "${MAGENTA}            REMOVAL SUMMARY                ${RESET}\n";
+print "${MAGENTA}===========================================${RESET}\n\n";
+
+$total_removed = 0;
+foreach my $key (keys %removal_stats) {
+    $total_removed += $removal_stats{$key};
+}
+
+if ($total_removed > 0) {
+    print "${GREEN}[SUCCESS]${RESET} Removal operation completed\n\n";
+    
+    print "${BLUE}Removal Statistics:${RESET}\n";
+    print "  CmsForms:              ${YELLOW}" . sprintf("%3d", $removal_stats{cms_forms}) . "${RESET}\n";
+    print "  CmsPageElements:       ${YELLOW}" . sprintf("%3d", $removal_stats{cms_page_elem}) . "${RESET}\n";
+    print "  CmsPages:              ${YELLOW}" . sprintf("%3d", $removal_stats{cms_page}) . "${RESET}\n";
+    print "  CmsSections:           ${YELLOW}" . sprintf("%3d", $removal_stats{cms_section}) . "${RESET}\n";
+    print "  CmsTemplateElements:   ${YELLOW}" . sprintf("%3d", $removal_stats{cms_template_elem}) . "${RESET}\n";
+    print "  CmsTemplates:          ${YELLOW}" . sprintf("%3d", $removal_stats{cms_template}) . "${RESET}\n";
+    print "  ${CYAN}─────────────────${RESET}\n";
+    print "  Total:        ${GREEN}" . sprintf("%3d", $total_removed) . "${RESET}\n";
+    
+    if (@page_items_removed) {
+        print "\n${BLUE}Pages Items Removed:${RESET}\n";
+        foreach my $item (@page_items_removed) {
+            print "  - ${CYAN}" . $item->{title} . "${RESET} (ID: " . $item->{id} . ")\n";
+        }
+    }
+} else {
+    print "${YELLOW}[WARNING]${RESET} No data was removed\n";
+    print "${YELLOW}[INFO]${RESET} The page demo data may have already been removed\n";
+}
+
+print "\n${GREEN}[COMPLETE]${RESET} Page data removal finished\n";

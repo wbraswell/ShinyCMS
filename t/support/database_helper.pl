@@ -108,17 +108,17 @@ sub insert_pages_demo_data() {
         or die "Failed to run $target_script: $?";
 }
 
-# KBAKER 20251031: run program that deletes pages demo data
+# KBAKER 20251107: run program that deletes pages demo data
 sub delete_pages_demo_data() {
-    my $target_script = File::Spec->catfile($repo_root, 'bin', 'database', 'data', 'insert-pages-demo-data');
+    my $target_script = File::Spec->catfile($repo_root, 'bin', 'database', 'data', 'delete-pages-demo-data');
 
     system($^X, $target_script) == 0
         or die "Failed to run $target_script: $?";
 }
 
-# KBAKER 20251031: run program that verifies deletion of pages demo data
+# KBAKER 20251107: run program that verifies deletion of pages demo data
 sub verify_pages_cleanup() {
-    my $target_script = File::Spec->catfile($repo_root, 'bin', 'database', 'data', 'insert-pages-demo-data');
+    my $target_script = File::Spec->catfile($repo_root, 'bin', 'database', 'data', 'verify-pages-cleanup');
 
     system($^X, $target_script) == 0
         or die "Failed to run $target_script: $?";

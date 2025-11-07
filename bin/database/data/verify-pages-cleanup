@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 
 # ===================================================================
-# File:		bin/database/verify-forum-cleanup
+# File:		bin/database/verify-pages-cleanup
 # Purpose:	Verify that all pages demo data has been removed
 # 
 # This script checks that all pages-related demo data has been
@@ -16,29 +16,48 @@ use strict;
 use warnings;
 
 # CPAN modules
-use Term::ANSIColor qw(:constants);
+use Term::ANSIColor qw(color);
 use DateTime::Duration;
+use English;
+
+# ANSI color codes for better readability
+my $GREEN  = color('green');
+my $YELLOW = color('yellow');
+my $RED    = color('red');
+my $CYAN   = color('cyan');
+my $MAGENTA = color('magenta');
+my $BLUE   = color('blue');
+my $BOLD   = color('bold');
+my $RESET  = color('reset');
 
 # Load local helper lib and get connected schema object
 use FindBin qw( $Bin );
 use lib "$Bin/../../lib";
-require 'helpers.pl';
 
-my $schema = get_schema();
+eval {
+    # Check if we can load the helper module
+    require 'helpers.pl';
+};
+
+if ($EVAL_ERROR) {
+    print "${RED}[ERROR]${RESET} Cannot load helpers.pl: $EVAL_ERROR\n";
+    print "${YELLOW}[INFO]${RESET} Make sure helpers.pl is in the lib directory\n";
+    exit 1;
+}
+
+my $schema;
+eval {
+    $schema = get_schema();
+};
+if ($EVAL_ERROR) {
+    print "${RED}[ERROR]${RESET} Failed to get database schema: $EVAL_ERROR\n";
+    exit 1;
+}
 
 # Initialize counters
 my $items_found = 0;
 my $items_removed = 0;
 my $total_checks = 0;
-
-# ANSI color codes
-my $RESET = RESET;
-my $GREEN = GREEN;
-my $RED = RED;
-my $YELLOW = YELLOW;
-my $CYAN = CYAN;
-my $BOLD = BOLD;
-my $DIM = FAINT;
 
 print "${BLUE}===========================================${RESET}\n";
 print "${BLUE}    Pages Data Verification Script          ${RESET}\n";
@@ -48,3 +67,266 @@ print "${BOLD}${CYAN}=" x 70 . "${RESET}\n";
 print "${BOLD}${CYAN}PAGES DATA CLEANUP VERIFICATION${RESET}\n";
 print "${CYAN}=" x 70 . "${RESET}\n\n";
 print "Checking that all pages demo data has been removed from the database...\n\n";
+
+print "${GREEN}[OK]${RESET} Database connection established\n\n";
+# Track orphaned data
+my $orphaned_data_found = 0;
+my $items_remaining = 0;
+my @orphan_reports;
+my %verification_stats = (
+    cms_forms           => 0,
+    cms_page_elem       => 0,
+    cms_page            => 0,
+    cms_section         => 0,
+    cms_template_elem   => 0,
+    cms_template        => 0,
+);
+
+# ============================================
+# 1. Verify removal of CmsForms
+# ============================================
+print "${CYAN}[1/7] Checking for demo forms...${RESET}\n";
+
+my @forms;
+eval {
+    @forms = $schema->resultset('CmsForm')->all;
+    $verification_stats{cms_forms} = scalar(@forms);
+};
+
+if($EVAL_ERROR) {
+    print "${RED}  ✗${RESET} Error checking CmsForms: $EVAL_ERROR\n";
+} elsif(@forms) {
+    print "${RED}  ✗${RESET} Found " . scalar(@forms) . " CmsForm item(s) still in database:\n";
+
+    my $demo_items = 0;
+    foreach my $item (@forms) {
+        $demo_items++;
+        print "    - ${CYAN}" . substr($item->name, 0, 50) . 
+              (length($item->name) > 50 ? "..." : "") . "${RESET}\n";
+        print "      ID: ${YELLOW}" . $item->id . "${RESET}";
+        print ", URL: ${YELLOW}" . $item->url_name . "${RESET}";
+        print "\n";
+    }
+
+    if($demo_items > 0) {
+        push @orphan_reports, "$demo_items demo CmsForms item(s) found";
+    }
+    $orphaned_data_found++;
+} else {
+    print "${GREEN}  ✓${RESET} No pages items found (clean)\n";
+}
+
+# ============================================
+# 2. Verify removal of CmsPages
+# ============================================
+print "${CYAN}[2/7] Checking for demo pages...${RESET}\n";
+
+my @pages;
+eval {
+    @pages = $schema->resultset('CmsPage')->all;
+    $verification_stats{cms_page} = scalar(@pages);
+};
+
+if($EVAL_ERROR) {
+    print "${RED}  ✗${RESET} Error checking CmsPages: $EVAL_ERROR\n";
+} elsif(@pages) {
+    print "${RED}  ✗${RESET} Found " . scalar(@pages) . " CmsPages item(s) still in database:\n";
+
+    my $demo_items = 0;
+    foreach my $item (@pages) {
+        $demo_items++;
+        print "    - ${CYAN}" . substr($item->name, 0, 50) . 
+              (length($item->name) > 50 ? "..." : "") . "${RESET}\n";
+        print "      ID: ${YELLOW}" . $item->id . "${RESET}";
+        print ", URI: ${YELLOW}" . $item->url_name . "${RESET}";
+        print "\n";
+    }
+
+    if($demo_items > 0) {
+        push @orphan_reports, "$demo_items demo CmsPages item(s) found";
+    }
+    $orphaned_data_found++;
+} else {
+    print "${GREEN}  ✓${RESET} No pages items found (clean)\n";
+}
+
+# ============================================
+# 3. Verify removal of CmsPageElement
+# ============================================
+print "${CYAN}[3/7] Checking for demo page elements...${RESET}\n";
+
+my @page_elements;
+eval {
+    @page_elements = $schema->resultset("CmsPageElement")->all; 
+    $verification_stats{cms_page_elem} = scalar(@page_elements);
+};
+
+if($EVAL_ERROR) {
+    print "${RED}  ✗${RESET} Error checking CmsPageElements: $EVAL_ERROR\n";
+} elsif(@page_elements) {
+    print "${RED}  ✗${RESET} Found " . scalar(@page_elements) . " CmsPageElements item(s) still in database:\n";
+
+    my $demo_items = 0;
+    foreach my $item (@page_elements) {
+        $demo_items++;
+        print "    - ${CYAN}" . substr($item->name, 0, 50) . 
+              (length($item->name) > 50 ? "..." : "") . "${RESET}\n";
+        print "      ID: ${YELLOW}" . $item->id . "${RESET}";
+        print ", PAGE: ${YELLOW}" . $item->page . "${RESET}";
+        print "\n";
+    }
+
+    if($demo_items > 0) {
+        push @orphan_reports, "$demo_items demo CmsPageElements item(s) found";
+    }
+    $orphaned_data_found++;
+} else {
+    print "${GREEN}  ✓${RESET} No pages items found (clean)\n";
+}
+
+# ============================================
+# 4. Verify removal of CmsSection
+# ============================================
+print "${CYAN}[4/7] Checking for demo sections...${RESET}\n";
+
+my @sections;
+eval {
+    @sections = $schema->resultset("CmsSection")->all; 
+    $verification_stats{cms_section} = scalar(@sections);
+};
+
+if($EVAL_ERROR) {
+    print "${RED}  ✗${RESET} Error checking CmsSection: $EVAL_ERROR\n";
+} elsif(@sections) {
+    print "${RED}  ✗${RESET} Found " . scalar(@sections) . " CmsSection item(s) still in database:\n";
+
+    my $demo_items = 0;
+    foreach my $item (@sections) {
+        $demo_items++;
+        print "    - ${CYAN}" . substr($item->name, 0, 50) . 
+              (length($item->name) > 50 ? "..." : "") . "${RESET}\n";
+        print "      ID: ${YELLOW}" . $item->id . "${RESET}";
+        print ", URL: ${YELLOW}" . $item->url_name . "${RESET}";
+        print "\n";
+    }
+
+    if($demo_items > 0) {
+        push @orphan_reports, "$demo_items demo CmsSection item(s) found";
+    }
+    $orphaned_data_found++;
+} else {
+    print "${GREEN}  ✓${RESET} No pages items found (clean)\n";
+}
+
+# ============================================
+# 5. Verify removal of CmsTemplateElement
+# ============================================
+print "${CYAN}[5/7] Checking for demo template elements...${RESET}\n";
+
+my @template_elements;
+eval {
+    @template_elements = $schema->resultset("CmsTemplateElement")->all; 
+    $verification_stats{cms_template_elem} = scalar(@template_elements);
+};
+
+if($EVAL_ERROR) {
+    print "${RED}  ✗${RESET} Error checking CmsTemplateElement: $EVAL_ERROR\n";
+} elsif(@template_elements) {
+    print "${RED}  ✗${RESET} Found " . scalar(@template_elements) . " CmsTemplateElement item(s) still in database:\n";
+
+    my $demo_items = 0;
+    foreach my $item (@template_elements) {
+        $demo_items++;
+        print "    - ${CYAN}" . substr($item->name, 0, 50) . 
+              (length($item->name) > 50 ? "..." : "") . "${RESET}\n";
+        print "      ID: ${YELLOW}" . $item->id . "${RESET}";
+        print ", TEMPLATE: ${YELLOW}" . $item->template . "${RESET}";
+        print "\n";
+    }
+
+    if($demo_items > 0) {
+        push @orphan_reports, "$demo_items demo CmsTemplateElement item(s) found";
+    }
+    $orphaned_data_found++;
+} else {
+    print "${GREEN}  ✓${RESET} No pages items found (clean)\n";
+}
+
+# ============================================
+# 6. Verify removal of CmsTemplate
+# ============================================
+print "${CYAN}[6/7] Checking for demo templates...${RESET}\n";
+
+my @templates;
+eval {
+    @templates = $schema->resultset("CmsTemplate")->all; 
+    $verification_stats{cms_template} = scalar(@templates);
+};
+
+if($EVAL_ERROR) {
+    print "${RED}  ✗${RESET} Error checking CmsTemplate: $EVAL_ERROR\n";
+} elsif(@templates) {
+    print "${RED}  ✗${RESET} Found " . scalar(@templates) . " CmsTemplate item(s) still in database:\n";
+
+    my $demo_items = 0;
+    foreach my $item (@templates) {
+        $demo_items++;
+        print "    - ${CYAN}" . substr($item->name, 0, 50) . 
+              (length($item->name) > 50 ? "..." : "") . "${RESET}\n";
+        print "      ID: ${YELLOW}" . $item->id . "${RESET}";
+        print ", TEMPLATE_FILE: ${YELLOW}" . $item->template_file . "${RESET}";
+        print "\n";
+    }
+
+    if($demo_items > 0) {
+        push @orphan_reports, "$demo_items demo CmsTemplate item(s) found";
+    }
+    $orphaned_data_found++;
+} else {
+    print "${GREEN}  ✓${RESET} No pages items found (clean)\n";
+}
+
+# ============================================
+# 10. Generate comprehensive statistics
+# ============================================
+print "\n${CYAN}[7/7] Generating comprehensive statistics...${RESET}\n";
+
+print "${MAGENTA}  Database Statistics:${RESET}\n";
+print "    CmsForm:            " . ($verification_stats{cms_forms} || 0) . "\n";
+print "    CmsPageElements:    " . ($verification_stats{cms_page_elem} || 0) . "\n";
+print "    CmsPage:            " . ($verification_stats{cms_page} || 0) . "\n";
+print "    CmsSection:         " . ($verification_stats{cms_section} || 0) . "\n";
+print "    CmsTemplateElement: " . ($verification_stats{cms_template_elem} || 0) . "\n";
+print "    CmsTemplate:        " . ($verification_stats{cms_template} || 0) . "\n";
+
+# ============================================
+# Final Summary
+# ============================================
+print "\n${BLUE}===========================================${RESET}\n";
+print "${BLUE}         VERIFICATION SUMMARY              ${RESET}\n";
+print "${BLUE}===========================================${RESET}\n\n";
+
+if ($orphaned_data_found) {
+    print "${RED}${BOLD}[FAILED]${RESET} Pages demo data or orphaned records detected!\n\n";
+    print "${YELLOW}Issues found:${RESET}\n";
+    foreach my $report (@orphan_reports) {
+        print "  ${RED}✗${RESET} $report\n";
+    }
+    
+    print "\n${YELLOW}[RECOMMENDATION]${RESET} To clean up the remaining data:\n";
+    print "  1. Run the removal script: ${CYAN}perl delete-pages-demo-data.pl${RESET}\n";
+    print "  2. If orphaned data persists, manually remove:\n";
+    print "     - Orphaned discussions and comments first\n";
+    print "     - Orphaned tagsets and tags\n";
+    print "     - Then retry the removal script\n";
+    
+    # Return non-zero exit code for failure
+    exit 1;
+} else {
+    print "${GREEN}${BOLD}[PASSED]${RESET} No pages demo data or orphaned records found!\n";
+    print "${GREEN}  ✓${RESET} Database is clean of pages demo data\n";
+    print "${GREEN}  ✓${RESET} No orphaned records detected\n";
+    
+    # Return zero exit code for success
+    exit 0;
+}

@@ -48,11 +48,17 @@ $t->text_like(
 	qr{Here.+(0 votes).+There.+(0 votes).+Everywhere.+(0 votes)}sm,
 	'No votes cast yet'
 );
+# KBAKER 20251107: extract poll answer id for poll vote test,
+# originally queried hard coded answer ID and now queries id found from database
+my $c = $t->ctx;
+my $first_answer = $c->model( 'DB::PollAnswer' )->search( { answer => 'Here' } )->first;
+my $first_answer_id = $first_answer->id;
+
 # Vote in the poll
 $t->submit_form_ok({
 	form_id => 'poll',
 	fields => {
-		answer => '1',
+		answer => $first_answer_id,
 	}},
 	'Vote in the poll'
 );
@@ -65,10 +71,14 @@ $t->text_like(
 	"1 vote cast for 'Here', none for 'There' or 'Everywhere'."
 );
 # Try to change our vote
+# KBAKER 20251107: extract poll answer id for poll vote test,
+# originally queried hard coded answer ID and now queries id found from database
+my $third_answer = $c->model( 'DB::PollAnswer' )->search( { answer => 'Everywhere' } )->first;
+my $third_answer_id = $third_answer->id;
 $t->submit_form_ok({
 	form_id => 'poll',
 	fields => {
-		answer => '3',
+		answer => $third_answer,
 	}},
 	'Vote again, for a different option'
 );
@@ -89,7 +99,8 @@ $t->get( $poll_path );
 $t->submit_form_ok({
 	form_id => 'poll',
 	fields => {
-		answer => '3',
+		# KBAKER 20251107: originally queried hard coded answer ID and now queries id found from database
+		answer => $third_answer_id,
 	}},
 	'Vote again, for a different option, after logging in'
 );
@@ -101,11 +112,16 @@ $t->text_like(
 	qr{Here.+(0 votes).+There.+(0 votes).+Everywhere.+(1 vote)}sm,
 	"1 vote cast for 'Everywhere', none for 'Here' or 'There'."
 );
+
+# KBAKER 20251107: extract poll answer id for poll vote test,
+# originally queried hard coded answer ID and now queries id found from database
+my $second_answer = $c->model( 'DB::PollAnswer' )->search( { answer => 'There' } )->first;
+my $second_answer_id = $second_answer->id;
 # And vote yet again...
 $t->submit_form_ok({
 	form_id => 'poll',
 	fields => {
-		answer => '2',
+		answer => $second_answer_id,
 	}},
 	'Vote again, for the remaining option'
 );
@@ -125,7 +141,8 @@ $t->get( $poll_path );
 $t->submit_form_ok({
 	form_id => 'poll',
 	fields => {
-		answer => '1',
+		# KBAKER 20251107: originally queried hard coded answer ID and now queries id found from database
+		answer => $first_answer_id,
 	}},
 	'Vote again, as a different logged-in user'
 );
@@ -137,7 +154,8 @@ $t->text_like(
 $t->submit_form_ok({
 	form_id => 'poll',
 	fields => {
-		answer => '1',
+		# KBAKER 20251107: originally queried hard coded answer ID and now queries id found from database
+		answer => $first_answer_id,
 	}},
 	'Vote again, as the same user, for the same option'
 );
