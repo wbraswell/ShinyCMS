@@ -18,11 +18,16 @@ use Test::WWW::Mechanize::Catalyst::WithContext;
 use Try::Tiny;
 
 use lib 't/support';
+# KBAKER 20251114: import program for managing database demo data
 require 'login_helpers.pl';  ## no critic
+require 'database_helper.pl';
 
 
 # Get a mech object
 my $t = Test::WWW::Mechanize::Catalyst::WithContext->new( catalyst_app => 'ShinyCMS' );
+
+# KBAKER 20251114: insert pages demo data to run test module
+insert_pages_demo_data();
 
 # /
 $t->get_ok(
@@ -30,7 +35,9 @@ $t->get_ok(
 	'Go to /'
 );
 $t->title_is(
-	'Home - ShinySite',
+	# KBAKER 20251114: the test initially expected the 'Home - ShinySite' title on the site homepage;
+	# the homepage title has since been changed to the line below:
+	'About ShinyCMS - ShinySite',
 	'Loaded homepage (default CMS page+section, from Pages controller)'
 );
 
@@ -41,7 +48,9 @@ $t->get_ok(
 	'Go to /affiliate=TEST-AFFILIATE'
 );
 $t->title_is(
-	'Home - ShinySite',
+	# KBAKER 20251114: the test initially expected the 'Home - ShinySite' title on the site homepage;
+	# the homepage title has since been changed to the line below:
+	'About ShinyCMS - ShinySite',
 	'Loaded homepage'
 );
 my $affiliate_cookie = $t->cookie_jar->get_cookies(
@@ -77,7 +86,9 @@ $t->get_ok(
 	'Go to /logout'
 );
 $t->title_is(
-	'Home - ShinySite',
+	# KBAKER 20251114: the test initially expected the 'Home - ShinySite' title on the site homepage;
+	# the homepage title has since been changed to the line below:
+	'About ShinyCMS - ShinySite',
 	'Get redirected to homepage'
 );
 my $user_exists = $c->user_exists ? 1 : 0;
@@ -120,7 +131,9 @@ $t->get_ok(
 	'Go to /style-switcher/TEST-SWITCHER'
 );
 $t->title_is(
-	'Home - ShinySite',
+	# KBAKER 20251114: the test initially expected the 'Home - ShinySite' title on the site homepage;
+	# the homepage title has since been changed to the line below:
+	'About ShinyCMS - ShinySite',
 	'Redirected to homepage'
 );
 my $stylesheet_cookie = $t->cookie_jar->get_cookies(
@@ -136,7 +149,9 @@ $t->get_ok(
 	'Go to /style-switcher/default'
 );
 $t->title_is(
-	'Home - ShinySite',
+	# KBAKER 20251114: the test initially expected the 'Home - ShinySite' title on the site homepage;
+	# the homepage title has since been changed to the line below:
+	'About ShinyCMS - ShinySite',
 	'Redirected to homepage'
 );
 $stylesheet_cookie = $t->cookie_jar->get_cookies(
@@ -162,7 +177,9 @@ $t->get_ok(
 	"Set mobile override to 'on'"
 );
 $t->title_is(
-	'Home - ShinySite',
+	# KBAKER 20251114: the test initially expected the 'Home - ShinySite' title on the site homepage;
+	# the homepage title has since been changed to the line below:
+	'About ShinyCMS - ShinySite',
 	'Redirected to homepage'
 );
 my $mobile_cookie = $t->cookie_jar->get_cookies(
@@ -236,5 +253,9 @@ system( "mv $image_dir.test $image_dir" );
 
 # Tidy up
 $t->cookie_jar->clear( '127.0.0.1' );
+
+# KBAKER 20251114: delete and verify deletion of pages demo data
+delete_pages_demo_data();
+verify_pages_cleanup();
 
 done_testing();

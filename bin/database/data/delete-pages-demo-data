@@ -96,6 +96,66 @@ if ($removal_stats{cms_forms} == 0) {
 }
 
 # ============================================
+# STEP 1.1: Clear default_page from CmsSections
+# ============================================
+print "${CYAN}[STEP 2.5/6]${RESET} Clearing default_page references from CmsSections...\n";
+
+eval {
+    my @cms_sections = ('Home', 'More');
+    foreach my $name (@cms_sections) {
+        my $section = $schema->resultset('CmsSection')->find({ name => $name });
+        if ($section && $section->default_page) {
+            $section->update({ default_page => undef });
+            print "${GREEN}  ✓${RESET} Cleared default_page from section: ${YELLOW}$name${RESET}\n";
+        }
+    }
+};
+
+if ($EVAL_ERROR) {
+    print "${RED}  ✗${RESET} Error clearing default_page references: $EVAL_ERROR\n";
+}
+
+# ============================================
+# STEP 1.2: Clear default_page from CmsPage
+# ============================================
+print "${CYAN}[STEP 1.2/6]${RESET} Clearing default_page references from CmsPage...\n";
+
+eval {
+    my @cms_page = ('Home', 'About ShinyCMS', 'Feature List', 'Contact Us');
+    foreach my $name (@cms_page) {
+        my $page = $schema->resultset('CmsPage')->find({ name => $name });
+        if ($page && $page->default_page) {
+            $page->update({ default_page => undef });
+            print "${GREEN}  ✓${RESET} Cleared default_page from page: ${YELLOW}$name${RESET}\n";
+        }
+    }
+};
+
+if ($EVAL_ERROR) {
+    print "${RED}  ✗${RESET} Error clearing default_page references: $EVAL_ERROR\n";
+}
+
+# ============================================
+# STEP 1.3: Clear default_page from CmsPageElement
+# ============================================
+print "${CYAN}[STEP 1.2/6]${RESET} Clearing default_page references from CmsPageElement...\n";
+
+eval {
+    my @cms_page_element = ('Home', 'About ShinyCMS', 'Feature List', 'Contact Us');
+    foreach my $name (@cms_page_element) {
+        my $page_element = $schema->resultset('CmsPageElement')->find({ name => $name });
+        if ($page_element && $page_element->default_page) {
+            $page_element->update({ default_page => undef });
+            print "${GREEN}  ✓${RESET} Cleared default_page from page element: ${YELLOW}$name${RESET}\n";
+        }
+    }
+};
+
+if ($EVAL_ERROR) {
+    print "${RED}  ✗${RESET} Error clearing default_page references: $EVAL_ERROR\n";
+}
+
+# ============================================
 # STEP 2: Remove CmsPageElement
 # ============================================
 print "${CYAN}[STEP 2/6]${RESET} Removing CmsPageElement...\n";
