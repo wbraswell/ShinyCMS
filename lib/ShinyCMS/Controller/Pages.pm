@@ -255,7 +255,20 @@ sub default_section  : Private {
 	my ( $self, $c ) = @_;
 
 	# TODO: allow CMS Admins to configure this
-	$c->stash->{ section } = $c->model( 'DB::CmsSection' )->first;
+	# KBAKER 20251121: initially called CmsSection from stash by $c->model( 'DB::CmsSection' )->first;
+	# MySQL extracted sections by FIFO, PostgreSQL follows stricter SQL behavior and extracts first
+	# element by what's most efficient internally; explicitly order by menu_position to ensure consistent behavior;
+	# without an ORDER BY clause, the first() method relies on database-specific ordering which
+	# relies on database-specific ordering which differs between MySQL and PostgreSQL
+	$c->stash->{ section } = $c->model( 'DB::CmsSection' )->search(
+		{ hidden => 0 },
+		{ 
+			order_by => [ 
+				{ -asc => 'menu_position' },
+				{ -asc => 'id' }
+			]
+		}
+	)->first;
 
 	# Skip to 'no data yet' page if no sections found in database
 	$c->detach( 'no_page_data' ) unless $c->stash->{ section };
@@ -285,7 +298,21 @@ sub default_page : Private {
 	}
 	else {
 		# Return the first page added to the default section
-		my $first = $c->stash->{ section }->cms_pages->first;
+		# KBAKER 20251121: explicit ordering ensures consistent behavior;
+		# pages with menu_position values come before NULL values
+		my $first = $c->stash->{ section }->cms_pages->search(
+		{},
+		{
+			order_by => [
+				{ -asc => \'menu_position IS NULL' },  # Non-NULL values first
+				{ -asc => 'menu_position' },
+				{ -asc => 'id' }
+				]
+			}
+		)->first;
+		$c->log->warn("Section '" . $c->stash->{ section }->name . 
+			"' has no default_page configured, falling back to '" . 
+			$first->name . "'");
 		return $first->url_name if $first;
 
 		# Section exists but has no pages

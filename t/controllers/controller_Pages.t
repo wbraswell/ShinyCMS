@@ -36,9 +36,7 @@ $t->get_ok(
 	'Fetch /pages'
 );
 $t->title_is(
-	# KBAKER 20251114: the test initially expected the 'Home - ShinySite' title on the site homepage;
-	# the homepage title has since been changed to the line below:
-	'About ShinyCMS - ShinySite',
+	'Home - ShinySite',
 	'Loaded default CMS page (specified controller but not section or page)'
 );
 $t->get_ok(
@@ -108,36 +106,47 @@ ok(
 	$c->response->body =~ m{If you are the site admin, please add some content},
 	'Got expected fall-through text when calling no_page_data() directly'
 );
+# KBAKER 20251118: get a fresh Catalyst context with a properly populated stash;
+# the previous request was a 404 error (/pages/home/NO_SUCH_PAGE), which doesn't
+# populate the section/page data in the stash the same way a successful page load does;
+# this request ensures we have a valid section with default_page configured before
+# attempting to save and manipulate the default_page relationship in the tests below
+# using the $orig_default_* variables below
+$t->get_ok(
+	'/pages/home/home',
+	'Get a valid page to populate context'
+);
+$c = $t->ctx;
 
 # Test some failure conditions in utility methods
-# KBAKER 20251114: lines below up to the "Confirmed that the original default page url_name is 'home'" test
-# have been commented out until their initially intended purpose have been determined
-# my $orig_default_section      = $c->stash->{ section };
-# my $orig_default_section_id   = $c->stash->{ section }->id;
+# KBAKER 20251118: test follows a "save, modify, test, restore" pattern to verify
+# fallback behavior when a section has no default_page configured; save the current state,
+# deliberately break it, test the fallback logic, then restore the original state;
+# IMPORTANT: extract all stash data BEFORE calling controller methods, as methods like
+# default_section() modify the stash as a side effect
+my $orig_default_section      = $c->stash->{ section };
+my $orig_default_section_id   = $c->stash->{ section }->id;
+my $orig_default_page_id      = $c->stash->{ section }->default_page->id;
 my $orig_default_section_name = $P->default_section( $c );
-# my $orig_default_page_id      = $c->stash->{ section }->default_page->id;
 my $orig_default_page_name    = $P->default_page( $c );
 
-# ok(
-# 	$orig_default_section_name eq 'home',
-# 	"Confirmed that the original default section url_name is 'home'"
-# );
-# ok(
-# 	$orig_default_page_name eq 'home',
-# 	"Confirmed that the original default page url_name is 'home'"
-# );
+ok(
+	$orig_default_section_name eq 'home',
+	"Confirmed that the original default section url_name is 'home'"
+);
+ok(
+	$orig_default_page_name eq 'home',
+	"Confirmed that the original default page url_name is 'home'"
+);
 
 $c->stash->{ section }->update({ default_page => undef });
 my $fallback_default_page_name = $P->default_page( $c );
 ok(
-	# KBAKER 20251114: 'contact-us' changed to 'about';
-	# TO-DO: determine the original intent for testing for 'contact-us'
-	$fallback_default_page_name eq 'about',
-	"Confirmed that the fallback default page url_name is 'about'"
+	$fallback_default_page_name eq 'contact-us',
+	"Confirmed that the fallback default page url_name is 'contact-us'"
 );
 
-# KBAKER 20251114: TO-DO, determine original intent for '$orig_default_page_id'
-# $c->stash->{ section }->update({ default_page => $orig_default_page_id });
+$c->stash->{ section }->update({ default_page => $orig_default_page_id });
 
 # Create an empty section
 my $empty = $c->model( 'DB::CmsSection' )->find_or_create({
@@ -174,8 +183,7 @@ ok(
 open STDERR, '>&', $origstderr or die "Can't restore stderr: $!";
 
 # Restore the correct section to the stash
-# KBAKER 20251114: TO-DO, determine original intent for '$orig_default_section'
-# $c->stash->{ section } = $orig_default_section;
+$c->stash->{ section } = $orig_default_section;
 
 
 # Call search method without setting search param
