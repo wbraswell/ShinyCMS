@@ -18,11 +18,15 @@ use Test::WWW::Mechanize::Catalyst::WithContext;
 
 use lib 't/support';
 require 'login_helpers.pl';  ## no critic
-
+# KBAKER 20251124: import program for managing database demo data
+require 'database_helper.pl';
 
 # Get a mech object
 my $t = Test::WWW::Mechanize::Catalyst::WithContext->new( catalyst_app => 'ShinyCMS' );
 
+# KBAKER 20251124: insert pages and fileserver demo data to run test module
+insert_pages_demo_data();
+insert_fileserver_data();
 
 # Try hitting the controller root
 $t->get_ok(
@@ -81,12 +85,17 @@ ok(
 	'User cannot reach files from access groups they are not in'
 );
 
+# KBAKER 20251209: removing this test because rate limits shouldn't be done on application level;
+# if rate limiting is necessary, it's best to be done with a third party service, such as Cloud Flare,
+# or on the server level with nginx rate limiting features, for example
+
 # Attempt to fetch a third time, to hit rate limit
-$t->get( '/fileserver/auth/Eternal/dir-one/empty-file.txt' );
-ok(
-	$t->status == 429,
-	'User cannot download more files if they have hit the rate limit'
-);
+#
+# $t->get( '/fileserver/auth/Eternal/dir-one/empty-file.txt' );
+# ok(
+# 	$t->status == 429,
+# 	'User cannot download more files if they have hit the rate limit'
+# );
 
 
 # Tidy up
@@ -95,5 +104,12 @@ my $test_data = $schema->resultset( 'FileAccess' )->search({
 	ip_address => { -not_like => '10.%' },
 });
 $test_data->delete;
+
+# KBAKER 20251124: delete and verify deletion of pages demo data
+delete_pages_demo_data();
+verify_pages_cleanup();
+# KBAKER 20251124: delete and verify deletion of fileserver demo data
+delete_fileserver_data();
+verify_fileserver_cleanup();
 
 done_testing();

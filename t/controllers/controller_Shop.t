@@ -18,6 +18,10 @@ use Test::WWW::Mechanize::Catalyst::WithContext;
 
 use lib 't/support';
 require 'login_helpers.pl';  ## no critic
+# KBAKER 20251209: import program for managing database demo data;
+# then inserting shop demo data to run test module
+require 'database_helper.pl';
+insert_shop_demo_data();
 
 
 # Get a mech object

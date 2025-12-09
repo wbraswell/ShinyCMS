@@ -58,8 +58,7 @@ print "\n";
 
 # Step 2: Delete user access permissions
 print "Removing user access permissions...\n";
-# use Devel::Dwarn;
-# Dwarn($viewer_user);
+
 print "viewer_user: $viewer_user\n";
 
 if (defined $viewer_user) {
@@ -72,6 +71,27 @@ if ($first_user) {
     # Get all access permissions for first user
     print 'Deleting $first_user->user_accesses\n';
     $first_user->user_accesses->delete_all;
+}
+
+print "\n";
+
+# Step 2.5: Delete user login records
+print "Removing user login records...\n";
+
+if ($viewer_user) {
+    my $login_count = $viewer_user->user_logins->count;
+    if ($login_count > 0) {
+        $viewer_user->user_logins->delete_all;
+        print "  Deleted $login_count login records for user 'viewer'\n";
+    }
+}
+
+if ($first_user) {
+    my $login_count = $first_user->user_logins->count;
+    if ($login_count > 0) {
+        $first_user->user_logins->delete_all;
+        print "  Deleted $login_count login records for user 'first'\n";
+    }
 }
 
 print "\n";

@@ -18,8 +18,13 @@ use Test::WWW::Mechanize::Catalyst::WithContext;
 
 use lib 't/support';
 require 'login_helpers.pl';  ## no critic
+# KBAKER 20251125: import program for managing database demo data
+require 'database_helper.pl';
 
 my $t = Test::WWW::Mechanize::Catalyst::WithContext->new( catalyst_app => 'ShinyCMS' );
+
+# KBAKER 20251125: insert demo data to run tests
+insert_forum_data();
 
 # Forums (all of them)
 $t->get_ok(
@@ -231,8 +236,17 @@ ok(
 
 
 # Tidy up
+# KBAKER 20251202: delete forum posts and all associated data created for this test module
+my @forum_posts = $forum_tester->forum_posts->all;
+foreach my $posts (@forum_posts) {
+	$posts->purge;
+}
 $forum_tester->forum_posts->delete;
 $forum_tester->comments->delete;
 remove_test_user( $forum_tester );
+
+# KBAKER 20251021: delete and verify deletion of forum demo data
+delete_forums_data();
+verify_forums_cleanup();
 
 done_testing();

@@ -13,83 +13,204 @@
 
 use strict;
 use warnings;
+use Term::ANSIColor;
+use English;
 
-# CPAN modules
-use DateTime::Duration;
+# ANSI color codes for better readability
+my $GREEN  = color('green');
+my $YELLOW = color('yellow');
+my $RED    = color('red');
+my $CYAN   = color('cyan');
+my $MAGENTA = color('magenta');
+my $BLUE   = color('blue');
+my $RESET  = color('reset');
 
 # Load local helper lib and get connected schema object
 use FindBin qw( $Bin );
 use lib "$Bin/../../lib";
-require 'helpers.pl';  ## no critic
 
-my $schema = get_schema();
+eval {
+    # Check if we can load the helper module
+    require 'helpers.pl';
+};
 
-print "Starting database cleanup in reverse order...\n";
-
-# Delete tags first (they were added last)
-print "Removing tags and tagsets...\n";
-
-# Find and delete tags for forum_post3
-my $forum_post3 = $schema->resultset('ForumPost')->find({
-    url_title => 'future',
-});
-if ($forum_post3) {
-    # KBAKER 20250912: printing here to indicate the execution path
-    print "     Found forum_post3 for deleting tags\n";
-    my $tagset3 = $schema->resultset('Tagset')->find({
-        resource_id   => $forum_post3->id,
-        resource_type => 'ForumPost',
-    });
-    if ($tagset3) {
-        # KBAKER 20250912: printing here to indicate the execution path
-        print "          Found tags and removing...\n";
-        # Delete all tags associated with this tagset
-        $tagset3->tags->delete_all;
-        # Delete the tagset itself
-        $tagset3->delete;
-        print "  Deleted tagset and tags for forum_post3\n";
-    }
+if ($EVAL_ERROR) {
+    print "${RED}[ERROR]${RESET} Cannot load helpers.pl: $EVAL_ERROR\n";
+    print "${YELLOW}[INFO]${RESET} Make sure helpers.pl is in the lib directory\n";
+    exit 1;
 }
 
-# Delete forum posts in reverse order (post4, post3, post2, post1)
-print "Removing forum posts...\n";
-# KBAKER 20250912: general debugging, added 'edit_post' temporarily while debugging code
-my @post_urls = ('beep-beep-beep', 'future', 'no-talking', 'laptop-contest', 'edit_post');
-foreach my $url (@post_urls) {
-    my $post = $schema->resultset('ForumPost')->find({
-        url_title => $url,
-    });
-    if ($post) {
-        # KBAKER 20250916: replaced $post->delete with $post->purge, because only the purge subroutine will delete all the relations to ForumPost
-        $post->purge;
-        print "  Deleted forum post: $url\n";
-    }
+print "${MAGENTA}===========================================${RESET}\n";
+print "${MAGENTA}      Pages Data Removal Script             ${RESET}\n";
+print "${MAGENTA}===========================================${RESET}\n\n";
+
+# Get schema connection
+my $schema;
+eval {
+    $schema = get_schema();
+};
+if ($EVAL_ERROR) {
+    print "${RED}[ERROR]${RESET} Failed to get database schema: $EVAL_ERROR\n";
+    exit 1;
 }
 
-# Delete forums in reverse order (sw_forum1, hw_forum2, hw_forum1)
-print "Removing forums...\n";
-my @forum_urls = ('linux', 'desktops', 'laptops');
-foreach my $url (@forum_urls) {
-    my $forum = $schema->resultset('Forum')->find({
-        url_name => $url,
+print "${GREEN}[OK]${RESET} Database connection established\n\n";
+
+# Track removal statistics
+my $total_removed = 0;
+my %removal_stats = (
+    tagsets             => 0,
+    posts               => 0,
+    forums              => 0,
+    forum_sections      => 0,
+);
+my @page_items_removed;
+
+# ============================================
+# STEP 1: Remove Tagset1
+# ============================================
+print "${CYAN}[STEP 1/5]${RESET} Removing Tagset1...\n";
+
+eval {
+    my $forum_post1 = $schema->resultset('ForumPost')->find({
+        url_title => 'laptop-contest',
     });
-    if ($forum) {
-        $forum->delete;
-        print "  Deleted forum: $url\n";
+    if($forum_post1) {
+        my $tagset1 = $schema->resultset('Tagset')->find({
+            resource_id => $forum_post1->id,
+            resource_type => 'ForumPost',
+        });
+        if($tagset1) {
+            my $tagset_id = $tagset1->id;
+            $tagset1->tags->delete_all;
+            $tagset1->delete;
+            $removal_stats{tagsets}++;
+            print "${GREEN}  ✓${RESET} Removed tagset ID: ${YELLOW}$tagset_id${RESET}\n";
+        }
     }
+};
+
+if($EVAL_ERROR) {
+    print "${RED}  ✗${RESET} Error removing tagset1: $EVAL_ERROR\n";
 }
 
-# Delete forum sections in reverse order (section2, section1)
-print "Removing forum sections...\n";
-my @section_urls = ('software', 'hardware');
-foreach my $url (@section_urls) {
-    my $section = $schema->resultset('ForumSection')->find({
-        url_name => $url,
+# ============================================
+# STEP 2: Remove Tagset3
+# ============================================
+print "${CYAN}[STEP 2/5]${RESET} Removing Tagset3...\n";
+
+eval {
+    my $forum_post3 = $schema->resultset('ForumPost')->find({
+        url_title => 'future',
     });
-    if ($section) {
-        $section->delete;
-        print "  Deleted forum section: $url\n";
+    if ($forum_post3) {
+        my $tagset3 = $schema->resultset('Tagset')->find({
+            resource_id   => $forum_post3->id,
+            resource_type => 'ForumPost',
+        });
+        if ($tagset3) {
+            my $tagset_id = $tagset3->id;
+            $tagset3->tags->delete_all;
+            $tagset3->delete;
+            $removal_stats{tagsets}++;
+            print "${GREEN}  ✓${RESET} Removed tagset ID: ${YELLOW}$tagset_id${RESET}\n";
+        }
     }
+};
+
+if($EVAL_ERROR) {
+    print "${RED}  ✗${RESET} Error removing tagset3: $EVAL_ERROR\n";
 }
 
-print "Database cleanup completed successfully!\n";
+# ============================================
+# STEP 3: Remove Posts
+# ============================================
+print "${CYAN}[STEP 3/5]${RESET} Removing Posts...\n";
+
+eval {
+    my @post_urls = ('beep-beep-beep', 'future', 'no-talking', 'laptop-contest', 'edit_post');
+    foreach my $url (@post_urls) {
+        my $post = $schema->resultset('ForumPost')->find({
+            url_title => $url,
+        });
+        if ($post) {
+            my $post_id = $post->id;
+            $post->purge;
+            $removal_stats{posts}++;
+            print "${GREEN}  ✓${RESET} Removed post ID: ${YELLOW}$post_id${RESET}\n";
+        }
+    }
+};
+
+if($EVAL_ERROR) {
+    print "${RED}  ✗${RESET} Error removing posts: $EVAL_ERROR\n";
+}
+
+# ============================================
+# STEP 4: Remove Forums
+# ============================================
+print "${CYAN}[STEP 4/5]${RESET} Removing Forums...\n";
+eval {
+    my @forum_urls = ('linux', 'desktops', 'laptops');
+    foreach my $url (@forum_urls) {
+        my $forum = $schema->resultset('Forum')->find({
+            url_name => $url,
+        });
+        if ($forum) {
+            my $forum_id = $forum->id;
+            $forum->delete;
+            $removal_stats{forums}++;
+            print "${GREEN}  ✓${RESET} Removed forum ID: ${YELLOW}$forum_id${RESET}\n";
+        }
+    }
+};
+if($EVAL_ERROR) {
+    print "${RED}  ✗${RESET} Error removing forums: $EVAL_ERROR\n";
+}
+
+# ============================================
+# STEP 5: Remove ForumSections
+# ============================================
+print "${CYAN}[STEP 5/5]${RESET} Removing ForumSections...\n";
+eval {
+    my @section_urls = ('software', 'hardware');
+    foreach my $url (@section_urls) {
+        my $section = $schema->resultset('ForumSection')->find({
+            url_name => $url,
+        });
+        if ($section) {
+            my $section_id = $section->id;
+            $section->delete;
+            $removal_stats{forum_sections}++;
+            print "${GREEN}  ✓${RESET} Removed forum section ID: ${YELLOW}$section_id${RESET}\n";
+        }
+    }
+};
+if($EVAL_ERROR) {
+    print "${RED}  ✗${RESET} Error removing forum section: $EVAL_ERROR\n";
+}
+
+# ============================================
+# Summary
+# ============================================
+print "\n${MAGENTA}===========================================${RESET}\n";
+print "${MAGENTA}            REMOVAL SUMMARY                ${RESET}\n";
+print "${MAGENTA}===========================================${RESET}\n\n";
+
+$total_removed = 0;
+foreach my $key (keys %removal_stats) {
+    $total_removed += $removal_stats{$key};
+}
+
+if ($total_removed > 0) {
+    print "${GREEN}[SUCCESS]${RESET} Removal operation completed\n\n";
+
+    print "${BLUE}Removal Statistics:${RESET}\n";
+    print "  Tagsets:             ${YELLOW}" . sprintf("%3d", $removal_stats{tagsets}) . "${RESET}\n";
+    print "  Posts:               ${YELLOW}" . sprintf("%3d", $removal_stats{posts}) . "${RESET}\n";
+    print "  Forums:              ${YELLOW}" . sprintf("%3d", $removal_stats{forums}) . "${RESET}\n";
+    print "  Forum Sections:      ${YELLOW}" . sprintf("%3d", $removal_stats{forum_sections}) . "${RESET}\n";
+    print "  ${CYAN}─────────────────${RESET}\n";
+    print "  Total:               ${GREEN}" . sprintf("%3d", $total_removed) . "${RESET}\n";
+}
+print "\n${GREEN}[COMPLETE]${RESET} Forums data removal finished\n";

@@ -171,3 +171,10 @@ sub verify_poll_cleanup() {
     system($^X, $target_script) == 0
         or die "Failed to run $target_script: $?";
 }
+# KBAKER 20251209: run program that inserts shop demo data
+sub insert_shop_demo_data() {
+    my $target_script = File::Spec->catfile($repo_root, 'bin', 'database', 'data', 'insert-shop-demo-data');
+
+    system($^X, $target_script) == 0
+        or die "Failed to run $target_script: $?";
+}
