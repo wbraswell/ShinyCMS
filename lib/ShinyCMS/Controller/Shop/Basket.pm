@@ -252,7 +252,8 @@ sub get_basket : Private {
 	if ( $c->user_exists ) {
 		return $c->model('DB::Basket')->search(
 			{
-				user => $c->user->id,
+				# KBAKER 20260106: MySQL to PostgreSQL migration, changed 'user' to 'user_id'
+				user_id => $c->user->id,
 			},
 			{
 				join     => 'basket_items',
@@ -266,7 +267,8 @@ sub get_basket : Private {
 	return $c->model('DB::Basket')->search(
 		{
 			session => 'session:' . $session_id,
-			user    => undef,
+			# KBAKER 20260106: MySQL to PostgreSQL migration, changed 'user' to 'user_id'
+			user_id    => undef,
 		},
 		{
 			join     => 'basket_items',

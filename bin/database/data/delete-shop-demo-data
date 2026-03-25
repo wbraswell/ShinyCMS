@@ -1,0 +1,289 @@
+#!/usr/bin/env perl
+
+# ===================================================================
+# File:		bin/database/delete-shop-demo-data
+# Project:	ShinyCMS
+# Purpose:	Deletes shop demo data via DBIC (reverses insert-shop-demo-data)
+# 
+# Author:	Kai Baker <eigenspaces@gmail.com>
+# 
+# ShinyCMS is free software; you can redistribute it and/or modify it
+# under the terms of either the GPL 2.0 or the Artistic License 2.0
+# ===================================================================
+
+use strict;
+use warnings;
+
+# Load local helper lib and get connected schema object
+use FindBin qw( $Bin );
+use lib "$Bin/../../lib";
+require 'helpers.pl';  ## no critic
+
+my $schema = get_schema();
+
+# ANSI color codes
+my $RED     = "\e[31m";
+my $GREEN   = "\e[32m";
+my $YELLOW  = "\e[33m";
+my $BLUE    = "\e[34m";
+my $MAGENTA = "\e[35m";
+my $CYAN    = "\e[36m";
+my $WHITE   = "\e[37m";
+my $BOLD    = "\e[1m";
+my $RESET   = "\e[0m";
+
+sub info    { print "${CYAN}[INFO]${RESET} $_[0]\n"; }
+sub success { print "${GREEN}[OK]${RESET}   $_[0]\n"; }
+sub warn_   { print "${YELLOW}[WARN]${RESET} $_[0]\n"; }
+sub error   { print "${RED}[ERR]${RESET}  $_[0]\n"; }
+sub section { print "\n${BOLD}${MAGENTA}=== $_[0] ===${RESET}\n"; }
+
+sub delete_if_exists {
+	my ($rs, $criteria, $desc) = @_;
+	my $row = $rs->find($criteria);
+	if ($row) {
+		$row->delete;
+		success("Deleted $desc");
+		return 1;
+	} else {
+		warn_("Not found: $desc");
+		return 0;
+	}
+}
+
+print "${BOLD}${BLUE}";
+print "╔════════════════════════════════════════════════════════════╗\n";
+print "║          ShinyCMS Shop Demo Data Removal Script            ║\n";
+print "╚════════════════════════════════════════════════════════════╝${RESET}\n";
+
+# -------------------------------------------------------------------
+# Remove tags and tagsets (added last, remove first)
+# -------------------------------------------------------------------
+section("Removing Tags and Tagsets");
+
+# Find shop items to get their tagsets
+my @item_codes = ('green-ambi-widget', 'green-t-shirt');
+for my $code (@item_codes) {
+	my $item = $schema->resultset('ShopItem')->find({ code => $code });
+	if ($item) {
+		my $tagset = $schema->resultset('Tagset')->find({
+			resource_id   => $item->id,
+			resource_type => 'ShopItem',
+		});
+		if ($tagset) {
+			my $tag_count = $tagset->tags->delete;
+			success("Deleted $tag_count tag(s) for item '$code'");
+			$tagset->delete;
+			success("Deleted tagset for item '$code'");
+		} else {
+			warn_("No tagset found for item '$code'");
+		}
+	} else {
+		warn_("Item '$code' not found for tagset removal");
+	}
+}
+
+# -------------------------------------------------------------------
+# Remove shop item likes
+# -------------------------------------------------------------------
+section("Removing Shop Item Likes");
+
+my $ambi_widget = $schema->resultset('ShopItem')->find({ code => 'green-ambi-widget' });
+if ($ambi_widget) {
+	my $like_count = $ambi_widget->shop_items_like->search({ ip_address => '10.10.10.10' })->delete;
+	if ($like_count) {
+		success("Deleted $like_count like(s) from 'green-ambi-widget'");
+	} else {
+		warn_("No likes found for 'green-ambi-widget'");
+	}
+} else {
+	warn_("Item 'green-ambi-widget' not found for like removal");
+}
+
+# -------------------------------------------------------------------
+# Remove comments and discussions
+# -------------------------------------------------------------------
+section("Removing Comments and Discussions");
+
+my @discussion_item_codes = ('blue-lh-widget', 'red-rh-widget', 'green-ambi-widget');
+for my $code (@discussion_item_codes) {
+	my $item = $schema->resultset('ShopItem')->find({ code => $code });
+	if ($item) {
+		my $discussion = $schema->resultset('Discussion')->find({
+			resource_id   => $item->id,
+			resource_type => 'ShopItem',
+		});
+		if ($discussion) {
+			# Remove comments first
+			my $comment_count = $discussion->comments->delete;
+			success("Deleted $comment_count comment(s) for item '$code'") if $comment_count;
+			
+			# Clear discussion reference from item
+			$item->update({ discussion => undef });
+			info("Cleared discussion reference from item '$code'");
+			
+			# Delete discussion
+			$discussion->delete;
+			success("Deleted discussion for item '$code'");
+		} else {
+			warn_("No discussion found for item '$code'");
+		}
+	} else {
+		warn_("Item '$code' not found for discussion removal");
+	}
+}
+
+# -------------------------------------------------------------------
+# Remove shop item categories (associations)
+# -------------------------------------------------------------------
+section("Removing Shop Item Category Associations");
+
+my @all_item_codes = ('blue-lh-widget', 'red-rh-widget', 'green-ambi-widget', 'green-t-shirt');
+for my $code (@all_item_codes) {
+	my $item = $schema->resultset('ShopItem')->find({ code => $code });
+	if ($item) {
+		my $assoc_count = $item->shop_item_categories->delete;
+		if ($assoc_count) {
+			success("Deleted $assoc_count category association(s) for item '$code'");
+		} else {
+			warn_("No category associations for item '$code'");
+		}
+	}
+}
+
+# -------------------------------------------------------------------
+# Remove order items, orders, basket items, baskets referencing demo items
+# -------------------------------------------------------------------
+section("Removing Orders and Baskets (referencing demo items)");
+
+for my $code (@all_item_codes) {
+	my $item = $schema->resultset('ShopItem')->find({ code => $code });
+	if ($item) {
+		# Remove order items referencing this shop item
+		my $order_item_count = $schema->resultset('OrderItem')->search({ item => $item->id })->delete;
+		success("Deleted $order_item_count order item(s) for '$code'") if $order_item_count;
+		
+		# Remove basket items referencing this shop item
+		my $basket_item_count = $schema->resultset('BasketItem')->search({ item => $item->id })->delete;
+		success("Deleted $basket_item_count basket item(s) for '$code'") if $basket_item_count;
+		
+		# Remove shop item views
+		my $view_count = $item->shop_item_views->delete;
+		success("Deleted $view_count view(s) for '$code'") if $view_count;
+	}
+}
+
+# Clean up any empty orders (orders with no items left)
+my $empty_orders = $schema->resultset('Order')->search({
+	id => { -not_in => $schema->resultset('OrderItem')->search({}, { columns => ['order'] })->get_column('order')->as_query }
+});
+my $empty_order_count = $empty_orders->count;
+if ($empty_order_count > 0) {
+	$empty_orders->delete;
+	success("Deleted $empty_order_count empty order(s)");
+}
+
+# Clean up any empty baskets (baskets with no items left)
+my $empty_baskets = $schema->resultset('Basket')->search({
+	id => { -not_in => $schema->resultset('BasketItem')->search({}, { columns => ['basket'] })->get_column('basket')->as_query }
+});
+my $empty_basket_count = $empty_baskets->count;
+if ($empty_basket_count > 0) {
+	$empty_baskets->delete;
+	success("Deleted $empty_basket_count empty basket(s)");
+}
+
+# -------------------------------------------------------------------
+# Remove shop item postage options, elements, and items
+# -------------------------------------------------------------------
+section("Removing Shop Items (with elements and postage options)");
+
+for my $code (reverse @all_item_codes) {
+	my $item = $schema->resultset('ShopItem')->find({ code => $code });
+	if ($item) {
+		# Remove postage options
+		my $postage_count = $item->shop_item_postage_options->delete;
+		success("Deleted $postage_count postage option(s) for item '$code'") if $postage_count;
+		
+		# Remove elements
+		my $elem_count = $item->shop_item_elements->delete;
+		success("Deleted $elem_count element(s) for item '$code'") if $elem_count;
+		
+		# Remove item
+		$item->delete;
+		success("Deleted shop item '$code'");
+	} else {
+		warn_("Shop item '$code' not found");
+	}
+}
+
+# -------------------------------------------------------------------
+# Remove postage options
+# -------------------------------------------------------------------
+section("Removing Postage Options");
+
+my @postage_names = ('Gold', 'Special', 'Standard');  # Reverse order
+for my $name (@postage_names) {
+	my $option = $schema->resultset('PostageOption')->find({ name => $name });
+	if ($option) {
+		$option->delete;
+		success("Deleted postage option '$name'");
+	} else {
+		warn_("Postage option '$name' not found");
+	}
+}
+
+# -------------------------------------------------------------------
+# Remove product type elements and product types
+# -------------------------------------------------------------------
+section("Removing Product Types (with elements)");
+
+my @product_type_names = ('T-shirt', 'Paypal', 'Standard');  # Reverse order
+for my $name (@product_type_names) {
+	my $ptype = $schema->resultset('ShopProductType')->find({ name => $name });
+	if ($ptype) {
+		# Remove elements first
+		my $elem_count = $ptype->shop_product_type_elements->delete;
+		success("Deleted $elem_count element(s) for product type '$name'") if $elem_count;
+		
+		# Remove product type
+		$ptype->delete;
+		success("Deleted product type '$name'");
+	} else {
+		warn_("Product type '$name' not found");
+	}
+}
+
+# -------------------------------------------------------------------
+# Remove shop categories (children first, then parents)
+# -------------------------------------------------------------------
+section("Removing Shop Categories");
+
+# First remove child category (Ambidextrous Widgets)
+my $child_cat = $schema->resultset('ShopCategory')->find({ url_name => 'ambi-widgets' });
+if ($child_cat) {
+	$child_cat->delete;
+	success("Deleted child category 'Ambidextrous Widgets'");
+} else {
+	warn_("Child category 'ambi-widgets' not found");
+}
+
+# Then remove parent categories in reverse order
+my @category_urls = ('t-shirts', 'doodahs', 'widgets');  # Reverse order
+for my $url (@category_urls) {
+	my $cat = $schema->resultset('ShopCategory')->find({ url_name => $url });
+	if ($cat) {
+		$cat->delete;
+		success("Deleted category '$url'");
+	} else {
+		warn_("Category '$url' not found");
+	}
+}
+
+# -------------------------------------------------------------------
+# Done
+# -------------------------------------------------------------------
+print "\n${BOLD}${GREEN}";
+print "╔════════════════════════════════════════════════════════════╗\n";
+print "║              Demo data removal complete!                   ║\n";
+print "╚════════════════════════════════════════════════════════════╝${RESET}\n";

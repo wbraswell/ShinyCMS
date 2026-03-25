@@ -19,6 +19,10 @@ use File::Spec;
 
 use lib 't/support';
 require 'login_helpers.pl';  ## no critic
+# KBAKER 20251231: import program for managing database demo data;
+# then inserting fileserver demo data to run test module
+require 'database_helper.pl';
+insert_fileserver_data();
 
 # Get a hashref of the site config (including test overrides, if any)
 my $config = get_config();
@@ -230,5 +234,9 @@ ok(
 $user->transaction_logs->delete;
 $user->user_accesses->delete;
 remove_test_user( $user );
+
+# KBAKER 20260106: delete and verify deletion of fileserver demo data
+delete_fileserver_data();
+verify_fileserver_cleanup();
 
 done_testing();

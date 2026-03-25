@@ -265,7 +265,7 @@ sub save_user : Chained( 'base' ) : PathPart( 'save' ) : Args( 0 ) {
 		#$user->news_items->delete;
 		# Don't delete financial data, for legal/audit reasons
 		# KBAKER 20250428: MySQL to PostgreSQL migration, changing from Postgres reserved word
-		# user to user_is
+		# user to user_id
 		$user->orders->update({ user_id => undef });
 		$user->transaction_logs->update({ user_id => undef });
 		# Delete 'trivial' user-generated content

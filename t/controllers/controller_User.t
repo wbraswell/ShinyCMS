@@ -18,6 +18,11 @@ use Test::WWW::Mechanize::Catalyst::WithContext;
 
 use lib 't/support';
 require 'login_helpers.pl';  ## no critic
+# KBAKER 20251231: import program for managing database demo data;
+# then inserting fileserver demo data to run test module
+require 'database_helper.pl';
+insert_fileserver_data();
+insert_pages_demo_data();
 
 my $t = Test::WWW::Mechanize::Catalyst::WithContext->new( catalyst_app => 'ShinyCMS' );
 
@@ -490,5 +495,11 @@ remove_test_user( $user_obj );
 
 system( 'rm -f root/static/cms-uploads/user-profile-pics/user_controller_test/*.*' );
 system( 'rmdir root/static/cms-uploads/user-profile-pics/user_controller_test' );
+
+#KBAKER 20260106: deletion and verification of deletion for the fileserver and pages demo data
+delete_fileserver_data();
+verify_fileserver_cleanup();
+delete_pages_demo_data();
+verify_pages_cleanup();
 
 done_testing();

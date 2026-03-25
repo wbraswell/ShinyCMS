@@ -132,9 +132,11 @@ Related object: L<ShinyCMS::Schema::Result::User>
 =cut
 
 __PACKAGE__->belongs_to(
-  "user_id",
+  # KBAKER 20260106: MySQL to PostgreSQL migration, changed from user_id to user for ShinyCMS facing database access
+  "user",
   "ShinyCMS::Schema::Result::User",
-  { id => "user_id" },
+  # KBAKER 20260106: MySQL to PostgreSQL migration, replaced 'id' with 'foreign.id' and 'user_id' with 'self.user_id'
+  { "foreign.id" => "self.user_id" },
   { is_deferrable => 1, on_delete => "RESTRICT", on_update => "RESTRICT" },
 );
 

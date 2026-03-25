@@ -1,8 +1,8 @@
 #!/usr/bin/env perl
 
 # ===================================================================
-# File:     remove-pages-demo-data.pl
-# Purpose:  Remove pages demo data in reverse order with ANSI colors
+# File:     delete-pages-demo-data.pl
+# Purpose:  Deletes pages demo data in reverse order with ANSI colors
 #
 # Author:	Kai Baker <eigenspaces@gmail.com>
 #
@@ -115,30 +115,14 @@ if ($EVAL_ERROR) {
     print "${RED}  ✗${RESET} Error clearing default_page references: $EVAL_ERROR\n";
 }
 
-# ============================================
-# STEP 1.2: Clear default_page from CmsPage
-# ============================================
-print "${CYAN}[STEP 1.2/6]${RESET} Clearing default_page references from CmsPage...\n";
-
-eval {
-    my @cms_page = ('Home', 'About ShinyCMS', 'Feature List', 'Contact Us');
-    foreach my $name (@cms_page) {
-        my $page = $schema->resultset('CmsPage')->find({ name => $name });
-        if ($page && $page->default_page) {
-            $page->update({ default_page => undef });
-            print "${GREEN}  ✓${RESET} Cleared default_page from page: ${YELLOW}$name${RESET}\n";
-        }
-    }
-};
-
 if ($EVAL_ERROR) {
     print "${RED}  ✗${RESET} Error clearing default_page references: $EVAL_ERROR\n";
 }
 
 # ============================================
-# STEP 1.3: Clear default_page from CmsPageElement
+# STEP 1.2: Clear default_page from CmsPageElement
 # ============================================
-print "${CYAN}[STEP 1.3/6]${RESET} Clearing default_page references from CmsPageElement...\n";
+print "${CYAN}[STEP 1.2/6]${RESET} Clearing default_page references from CmsPageElement...\n";
 
 eval {
     my @cms_page_element = ('Home', 'About ShinyCMS', 'Feature List', 'Contact Us');

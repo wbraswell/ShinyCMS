@@ -178,3 +178,19 @@ sub insert_shop_demo_data() {
     system($^X, $target_script) == 0
         or die "Failed to run $target_script: $?";
 }
+
+# KBAKER 20251230: run program that deletes shop demo data
+sub delete_shop_demo_data() {
+    my $target_script = File::Spec->catfile($repo_root, 'bin', 'database', 'data', 'delete-shop-demo-data');
+
+    system($^X, $target_script) == 0
+        or die "Failed to run $target_script: $?";
+}
+
+# KBAKER 20251230: run program that verifies deletion of shop demo data
+sub verify_shop_cleanup() {
+    my $target_script = File::Spec->catfile($repo_root, 'bin', 'database', 'data', 'verify-shop-cleanup');
+
+    system($^X, $target_script) == 0
+        or die "Failed to run $target_script: $?";
+}

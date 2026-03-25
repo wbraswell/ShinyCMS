@@ -74,10 +74,6 @@ sub get_section : Chained( 'base' ) : PathPart( '' ) : CaptureArgs( 1 ) {
 		url_name => $section_url_name,
 		hidden   => 0,
 	})->single;
-	# KBAKER 20251114: check if url_name exists and if not, trigger alert; delete when not needed
-	unless ($section_url_name eq "NO_SUCH_SECTION")  {
-		die "no section for $section_url_name" unless $c->stash->{ section } ;
-	}
 	# 404 handler
 	$c->detach( 'Root', 'default' ) unless $c->stash->{ section };
 }
@@ -310,10 +306,14 @@ sub default_page : Private {
 				]
 			}
 		)->first;
-		$c->log->warn("Section '" . $c->stash->{ section }->name . 
-			"' has no default_page configured, falling back to '" . 
-			$first->name . "'");
-		return $first->url_name if $first;
+		# KBAKER 20260106: check if the first page added to the default section is both defined and true,
+		# and if so, then log the fallback to the page stored in $first, then load that page for the user
+		if($first) {
+			$c->log->warn("Section '" . $c->stash->{ section }->name . 
+				"' has no default_page configured, falling back to '" . 
+				$first->name . "'");
+			return $first->url_name;
+		}
 
 		# Section exists but has no pages
 		warn 'Called Pages::default_page() but stashed section has no pages';

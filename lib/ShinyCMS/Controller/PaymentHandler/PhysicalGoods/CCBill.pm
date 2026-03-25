@@ -145,7 +145,8 @@ sub success : Chained( 'get_order' ) : PathPart( 'success' ) : Args( 0 ) {
 		status => 'Success',
 		notes  => 'Transaction ID: '. $c->request->param( 'transaction_id' ), # TODO
 	};
-	$log_data->{ user } = $c->stash->{ order }->user->id if $c->stash->{ order }->user;
+	# KBAKER 20260106: MySQL to PostgreSQL migration, changed 'user' to 'user_id'
+	$log_data->{ user_id } = $c->stash->{ order }->user->id if $c->stash->{ order }->user;
 	$c->model( 'DB::TransactionLog' )->create( $log_data );
 
 	# Update order status

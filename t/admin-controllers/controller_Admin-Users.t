@@ -18,6 +18,10 @@ use Test::WWW::Mechanize::Catalyst::WithContext;
 
 use lib 't/support';
 require 'login_helpers.pl';  ## no critic
+# KBAKER 20251231: import program for managing database demo data;
+# then inserting fileserver demo data to run test module
+require 'database_helper.pl';
+insert_fileserver_data();
 
 
 my $admin = create_test_admin( 'test_admin_users', 'User Admin' );
@@ -170,11 +174,12 @@ my $user_id = $1;
 $t->submit_form_ok({
 	form_id => 'edit_user',
 	fields => {
-		allow_comments => undef,
-		admin_notes    => 'User updated by test suite',
-		date_group_1   => DateTime->now->ymd,
-		time_group_1   => DateTime->now->hms,
-		active         => undef,
+		allow_comments 			  => undef,
+		admin_notes    			  => 'User updated by test suite',
+		# KBAKER 20260106: replacing hard coded access id value with access id value obtained from '/admin/users/access-group/' URI above
+		"date_group_$access_id"   => DateTime->now->ymd,
+		"time_group_$access_id"   => DateTime->now->hms,
+		active         			  => undef,
 	}},
 	'Submitted form to update user notes and access, and remove discussion'
 );
@@ -200,10 +205,11 @@ $t->text_contains(
 $t->submit_form_ok({
 	form_id => 'edit_user',
 	fields => {
-		'role_'.$role_id => 'on',
-		active           => 'on',
-		date_group_1     => 'never',
-		profile_pic      => $pic_file,
+		'role_'.$role_id 			=> 'on',
+		active           			=> 'on',
+		# KBAKER 20260106: replacing hard coded access id value with access id value obtained from '/admin/users/access-group/' URI above
+		"date_group_$access_id"     => 'never',
+		profile_pic     			=> $pic_file,
 	}},
 	'Submit form to add role and profile pic, and set access to not expire'
 );
@@ -414,5 +420,9 @@ remove_test_admin( $admin      );
 
 system( 'rm -f root/static/cms-uploads/user-profile-pics/test_username/*.*' );
 system( 'rmdir root/static/cms-uploads/user-profile-pics/test_username' );
+
+# KBAKER 20260106: delete and verify deletion of fileserver demo data
+delete_fileserver_data();
+verify_fileserver_cleanup();
 
 done_testing();

@@ -735,4 +735,8 @@ $user2->shop_item_views->delete;
 remove_test_user( $user1 );
 remove_test_user( $user2 );
 
+#KBAKER 20260106: deletion and verification of deletion of shop demo data
+delete_shop_demo_data();
+verify_shop_cleanup();
+
 done_testing();

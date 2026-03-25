@@ -63,13 +63,13 @@ print "viewer_user: $viewer_user\n";
 
 if (defined $viewer_user) {
     # Get all access permissions for viewer user
-    print 'Deleting $viewer_user->user_accesses\n';
+    print "Deleting $viewer_user->user_accesses\n";
     $viewer_user->user_accesses->delete_all;
 }
 
 if ($first_user) {
     # Get all access permissions for first user
-    print 'Deleting $first_user->user_accesses\n';
+    print "Deleting $first_user->user_accesses\n";
     $first_user->user_accesses->delete_all;
 }
 

@@ -142,7 +142,8 @@ sub add_billing_address : Chained('base') : PathPart('add-billing-address') : Ar
 		$session_id = 'session:' . $c->sessionid;
 	}
 	my $order = $c->model('DB::Order')->create({
-		user             => $user_id,
+		# KBAKER 20260106: MySQL to PostgreSQL migration, changed 'user' to 'user_id'
+		user_id          => $user_id,
 		session          => $session_id,
 		email            => $email,
 		billing_address  => $billing_address,
@@ -436,7 +437,8 @@ sub get_order : Private {
 	if ( $c->user_exists ) {
 		my $order = $c->model('DB::Order')->search(
 			{
-				user => $c->user->id,
+				# KBAKER 20260106: MySQL to PostgreSQL migration, changed 'user' to 'user_id'
+				user_id => $c->user->id,
 			},
 			{
 				join     => 'order_items',
@@ -452,7 +454,8 @@ sub get_order : Private {
 	my $order = $c->model('DB::Order')->search(
 		{
 			session => 'session:' . $session_id,
-			user    => undef,
+			# KBAKER 20260106: MySQL to PostgreSQL migration, changed 'user' to 'user_id'
+			user_id    => undef,
 		},
 		{
 			join     => 'order_items',

@@ -388,7 +388,8 @@ sub like_item : Chained( 'get_item' ) : PathPart( 'like' ) : Args( 0 ) {
 	elsif ( $c->stash->{ item }->liked_by_anon( $ip_address ) and not $c->user_exists ) {
 		# Undo like by anon user
 		$c->model( 'DB::ShopItemLike' )->search({
-			user       => undef,
+			# KBAKER 20260106: MySQL to PostgreSQL migration, changed 'user' to 'user_id'
+			user_id       => undef,
 			item       => $c->stash->{ item }->id,
 			ip_address => $ip_address,
 		})->delete;

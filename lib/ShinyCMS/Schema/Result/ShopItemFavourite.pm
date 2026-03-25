@@ -123,7 +123,9 @@ Related object: L<ShinyCMS::Schema::Result::User>
 =cut
 
 __PACKAGE__->belongs_to(
-  "user_id",
+  # KBAKER 20260106: modified 9"user_id" to "user" because ,
+  # e.g., ShinyCMS expects "resultset(...)->user->id" but was getting "resultset(...)->user_id"
+  "user",
   "ShinyCMS::Schema::Result::User",
   { id => "user_id" },
   {

@@ -462,7 +462,9 @@ Return true if item is liked by specified user
 sub liked_by_user {
 	my( $self, $user_id ) = @_;
 	return $self->shop_items_like->count({
-		user => $user_id,
+    # KBAKER 20250106: MySQL to PostgreSQL migration, change 'user' to 'user_id';
+    # user is a reserved word in PostgreSQL
+		user_id => $user_id,
 	});
 }
 
@@ -477,7 +479,9 @@ sub liked_by_anon {
 	my( $self, $ip_address ) = @_;
 	return $self->shop_items_like->count({
 		ip_address => $ip_address,
-		user       => undef,
+    # KBAKER 20250106: MySQL to PostgreSQL migration, change 'user' to 'user_id'
+    # user is a reserved word in PostgreSQL
+		user_id       => undef,
 	});
 }
 
@@ -487,14 +491,16 @@ sub liked_by_anon {
 Return true if item is favourited by specified user
 
 =cut
-
+# KBAKER 20260106: accessing the count of user's favorited item directly via shop_item_favourites->count() instead of looping through and counting,
+# more direct and compatible with PostgreSQL
 sub favourited_by_user {
 	my( $self, $user_id ) = @_;
-	my @faves = $self->shop_item_favourites;
-	foreach my $fave ( @faves ) {
-		return 1 if $fave->user->id == $user_id;
-	}
-	return 0;
+
+  return 0 unless $user_id;
+
+	return $self->shop_item_favourites->count({
+		user_id => $user_id,
+	});
 }
 
 

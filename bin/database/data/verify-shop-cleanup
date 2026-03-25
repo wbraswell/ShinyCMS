@@ -1,0 +1,318 @@
+#!/usr/bin/env perl
+
+# ===================================================================
+# File:		bin/database/verify-shop-cleanup
+# Project:	ShinyCMS
+# Purpose:	Verify shop demo data was successfully removed
+# 
+# Author:	Kai Baker <eigenspaces@gmail.com>
+# 
+# ShinyCMS is free software; you can redistribute it and/or modify it
+# under the terms of either the GPL 2.0 or the Artistic License 2.0
+# ===================================================================
+
+use strict;
+use warnings;
+
+# Load local helper lib and get connected schema object
+use FindBin qw( $Bin );
+use lib "$Bin/../../lib";
+require 'helpers.pl';  ## no critic
+
+my $schema = get_schema();
+
+# ANSI color codes
+my $RED     = "\e[31m";
+my $GREEN   = "\e[32m";
+my $YELLOW  = "\e[33m";
+my $BLUE    = "\e[34m";
+my $MAGENTA = "\e[35m";
+my $CYAN    = "\e[36m";
+my $WHITE   = "\e[37m";
+my $BOLD    = "\e[1m";
+my $DIM     = "\e[2m";
+my $RESET   = "\e[0m";
+
+# Counters
+my $pass_count = 0;
+my $fail_count = 0;
+my $warn_count = 0;
+
+sub pass {
+	print "${GREEN}  ✓ ${RESET}$_[0]\n";
+	$pass_count++;
+}
+
+sub fail {
+	print "${RED}  ✗ ${RESET}$_[0]\n";
+	$fail_count++;
+}
+
+sub warn_ {
+	print "${YELLOW}  ⚠ ${RESET}$_[0]\n";
+	$warn_count++;
+}
+
+sub section {
+	print "\n${BOLD}${CYAN}── $_[0] ${RESET}${DIM}";
+	print "─" x (56 - length($_[0]));
+	print "${RESET}\n";
+}
+
+sub check_not_exists {
+	my ($rs_name, $criteria, $desc) = @_;
+	my $row = $schema->resultset($rs_name)->find($criteria);
+	if ($row) {
+		fail("Still exists: $desc");
+		return 0;
+	} else {
+		pass("Removed: $desc");
+		return 1;
+	}
+}
+
+sub check_count_zero {
+	my ($rs_name, $criteria, $desc) = @_;
+	my $count = $schema->resultset($rs_name)->search($criteria)->count;
+	if ($count > 0) {
+		fail("Found $count remaining: $desc");
+		return 0;
+	} else {
+		pass("None remaining: $desc");
+		return 1;
+	}
+}
+
+print "${BOLD}${BLUE}";
+print "╔════════════════════════════════════════════════════════════╗\n";
+print "║        ShinyCMS Shop Demo Data Cleanup Verification        ║\n";
+print "╚════════════════════════════════════════════════════════════╝${RESET}\n";
+
+# -------------------------------------------------------------------
+# Verify order items, basket items, and views removed
+# -------------------------------------------------------------------
+section("Order Items, Basket Items, and Views");
+
+# Check for order items referencing demo shop items
+my @demo_item_codes = ('blue-lh-widget', 'red-rh-widget', 'green-ambi-widget', 'green-t-shirt');
+my $orphan_order_items = 0;
+my $orphan_basket_items = 0;
+
+for my $code (@demo_item_codes) {
+	my $item = $schema->resultset('ShopItem')->find({ code => $code });
+	if ($item) {
+		my $oi_count = $schema->resultset('OrderItem')->search({ item => $item->id })->count;
+		$orphan_order_items += $oi_count;
+		my $bi_count = $schema->resultset('BasketItem')->search({ item => $item->id })->count;
+		$orphan_basket_items += $bi_count;
+	}
+}
+
+if ($orphan_order_items > 0) {
+	fail("Found $orphan_order_items order item(s) referencing demo shop items");
+} else {
+	pass("No order items reference demo shop items");
+}
+
+if ($orphan_basket_items > 0) {
+	fail("Found $orphan_basket_items basket item(s) referencing demo shop items");
+} else {
+	pass("No basket items reference demo shop items");
+}
+
+# -------------------------------------------------------------------
+# Verify shop categories removed
+# -------------------------------------------------------------------
+section("Shop Categories");
+
+check_not_exists('ShopCategory', { url_name => 'widgets' },
+	"Category 'Widgets'");
+check_not_exists('ShopCategory', { url_name => 'doodahs' },
+	"Category 'Doodahs'");
+check_not_exists('ShopCategory', { url_name => 'ambi-widgets' },
+	"Category 'Ambidextrous Widgets'");
+check_not_exists('ShopCategory', { url_name => 't-shirts' },
+	"Category 'T-shirts'");
+
+# -------------------------------------------------------------------
+# Verify product types removed
+# -------------------------------------------------------------------
+section("Product Types");
+
+check_not_exists('ShopProductType', { name => 'Standard' },
+	"Product type 'Standard'");
+check_not_exists('ShopProductType', { name => 'Paypal' },
+	"Product type 'Paypal'");
+check_not_exists('ShopProductType', { name => 'T-shirt' },
+	"Product type 'T-shirt'");
+
+# -------------------------------------------------------------------
+# Verify product type elements removed
+# -------------------------------------------------------------------
+section("Product Type Elements");
+
+check_count_zero('ShopProductTypeElement', { name => 'paypal_button' },
+	"Element 'paypal_button'");
+check_count_zero('ShopProductTypeElement', { name => 'sizes' },
+	"Element 'sizes'");
+check_count_zero('ShopProductTypeElement', { name => 'colours' },
+	"Element 'colours'");
+
+# -------------------------------------------------------------------
+# Verify postage options removed
+# -------------------------------------------------------------------
+section("Postage Options");
+
+check_not_exists('PostageOption', { name => 'Standard', price => '2.22' },
+	"Postage 'Standard' (\$2.22)");
+check_not_exists('PostageOption', { name => 'Special', price => '3.33' },
+	"Postage 'Special' (\$3.33)");
+check_not_exists('PostageOption', { name => 'Gold', price => '5.55' },
+	"Postage 'Gold' (\$5.55)");
+
+# -------------------------------------------------------------------
+# Verify shop items removed
+# -------------------------------------------------------------------
+section("Shop Items");
+
+my @item_codes = (
+	['blue-lh-widget',    'Blue left-handed widget'],
+	['red-rh-widget',     'Red right-handed widget'],
+	['green-ambi-widget', 'Green ambidextrous widget'],
+	['green-t-shirt',     'Green T-shirt'],
+);
+
+for my $item (@item_codes) {
+	check_not_exists('ShopItem', { code => $item->[0] },
+		"Item '$item->[1]'");
+}
+
+# -------------------------------------------------------------------
+# Verify shop item elements removed
+# -------------------------------------------------------------------
+section("Shop Item Elements and Views");
+
+check_count_zero('ShopItemElement', { name => 'paypal_button' },
+	"Item elements 'paypal_button'");
+check_count_zero('ShopItemElement', { name => 'sizes' },
+	"Item elements 'sizes'");
+check_count_zero('ShopItemElement', { name => 'colours' },
+	"Item elements 'colours'");
+
+# ShopItemViews would be orphaned if items don't exist, but check anyway
+my $view_count = 0;
+for my $code (@demo_item_codes) {
+	my $item = $schema->resultset('ShopItem')->find({ code => $code });
+	if ($item) {
+		$view_count += $item->shop_item_views->count;
+	}
+}
+if ($view_count > 0) {
+	fail("Found $view_count view(s) for demo items");
+} else {
+	pass("No views for demo items");
+}
+
+# -------------------------------------------------------------------
+# Verify shop item postage options removed
+# -------------------------------------------------------------------
+section("Shop Item Postage Options");
+
+# Check for any orphaned shop_item_postage_options referencing our postage options
+my $postage_std = $schema->resultset('PostageOption')->find({ name => 'Standard' });
+my $postage_spc = $schema->resultset('PostageOption')->find({ name => 'Special' });
+my $postage_gld = $schema->resultset('PostageOption')->find({ name => 'Gold' });
+
+if (!$postage_std && !$postage_spc && !$postage_gld) {
+	pass("No demo postage options exist (implies no item associations)");
+} else {
+	warn_("Some postage options still exist - checking associations");
+}
+
+# -------------------------------------------------------------------
+# Verify shop item categories removed
+# -------------------------------------------------------------------
+section("Shop Item Category Associations");
+
+my $widgets_cat = $schema->resultset('ShopCategory')->find({ url_name => 'widgets' });
+my $ambi_cat    = $schema->resultset('ShopCategory')->find({ url_name => 'ambi-widgets' });
+my $tshirt_cat  = $schema->resultset('ShopCategory')->find({ url_name => 't-shirts' });
+
+if (!$widgets_cat && !$ambi_cat && !$tshirt_cat) {
+	pass("No demo categories exist (implies no item associations)");
+} else {
+	warn_("Some categories still exist - associations may remain");
+}
+
+# -------------------------------------------------------------------
+# Verify discussions and comments removed
+# -------------------------------------------------------------------
+section("Discussions and Comments");
+
+check_count_zero('Discussion', { resource_type => 'ShopItem' },
+	"ShopItem discussions");
+
+# Check for the specific demo comment text
+my $demo_comment = $schema->resultset('Comment')->search({
+	body => { 'like' => '%widgets underwater%' }
+})->count;
+
+if ($demo_comment > 0) {
+	fail("Found $demo_comment demo comment(s) about underwater widgets");
+} else {
+	pass("Demo comment removed");
+}
+
+# -------------------------------------------------------------------
+# Verify likes removed
+# -------------------------------------------------------------------
+section("Shop Item Likes");
+
+check_count_zero('ShopItemLike', { ip_address => '10.10.10.10' },
+	"Demo like from 10.10.10.10");
+
+# -------------------------------------------------------------------
+# Verify tags and tagsets removed
+# -------------------------------------------------------------------
+section("Tags and Tagsets");
+
+check_count_zero('Tagset', { resource_type => 'ShopItem' },
+	"ShopItem tagsets");
+
+# Check for specific demo tags
+my @demo_tags = ('green', 'ambidextrous', 'demo', 'clothing');
+for my $tag (@demo_tags) {
+	my $count = $schema->resultset('Tag')->search({ tag => $tag })->count;
+	if ($count > 0) {
+		# Tags might be shared with other resources, so just warn
+		warn_("Tag '$tag' still exists ($count instance(s)) - may be shared");
+	} else {
+		pass("Tag '$tag' removed");
+	}
+}
+
+# -------------------------------------------------------------------
+# Summary
+# -------------------------------------------------------------------
+print "\n${BOLD}${BLUE}";
+print "════════════════════════════════════════════════════════════════${RESET}\n";
+print "${BOLD}                        SUMMARY${RESET}\n";
+print "${BOLD}${BLUE}════════════════════════════════════════════════════════════════${RESET}\n\n";
+
+print "  ${GREEN}Passed:${RESET}   $pass_count\n";
+print "  ${RED}Failed:${RESET}   $fail_count\n";
+print "  ${YELLOW}Warnings:${RESET} $warn_count\n\n";
+
+if ($fail_count == 0) {
+	print "${BOLD}${GREEN}";
+	print "╔════════════════════════════════════════════════════════════╗\n";
+	print "║         ✓ All demo data successfully removed! ✓           ║\n";
+	print "╚════════════════════════════════════════════════════════════╝${RESET}\n";
+	exit 0;
+} else {
+	print "${BOLD}${RED}";
+	print "╔════════════════════════════════════════════════════════════╗\n";
+	print "║       ✗ Some demo data still exists - see above ✗         ║\n";
+	print "╚════════════════════════════════════════════════════════════╝${RESET}\n";
+	exit 1;
+}

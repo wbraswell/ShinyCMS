@@ -13,6 +13,11 @@
 use strict;
 use warnings;
 
+# KBAKER 20260106: configure the catalyst test environment for this test module
+BEGIN {
+    $ENV{CATALYST_CONFIG_LOCAL_SUFFIX} = 'test';
+}
+
 use Test::More;
 use Test::WWW::Mechanize::Catalyst::WithContext;
 
@@ -111,7 +116,7 @@ open STDERR, '>&', $origstderr or die "Can't restore stderr: $!";
 # Set up some order data
 my $user  = $schema->resultset('User' )->search->first;
 my $order = $schema->resultset('Order')->find_or_create({
-	user   => $user->id,
+	user_id   => $user->id,
 	email  => 'test@example.com',
 	status => 'Awaiting payment',
 	billing_address  => 'Test Suite',
